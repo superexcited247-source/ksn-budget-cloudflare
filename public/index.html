@@ -1,0 +1,1421 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#23272f">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="강신나 자금관리">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<title>강신나 자금관리</title>
+<!-- build: v13 ledger date/type filters + v12 budget-cash reconciliation + mobile PWA push -->
+<style>
+:root{
+  --bg:#f6f7f9; --panel:#fff; --text:#17191d; --muted:#6b7280; --line:#e5e7eb;
+  --dark:#23272f; --danger:#c62828; --income:#176b42; --warn:#9a6700;
+  --hustle:#7c3aed; --hustle-soft:#ede9fe;
+  --eleven:#f59e0b; --eleven-soft:#ffedd5;
+  --loami:#2dd4bf; --loami-soft:#ccfbf1;
+  --central:#334155; --central-soft:#e2e8f0;
+  --radius:17px; --shadow:0 12px 34px rgba(0,0,0,.07);
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%;width:100%;overflow-x:hidden}
+body{margin:0;min-width:0;width:100%;overflow-x:hidden;font-family:-apple-system,BlinkMacSystemFont,"Pretendard","Noto Sans KR","Apple SD Gothic Neo",sans-serif;background:var(--bg);color:var(--text)}
+button,input,select,textarea{font:inherit;max-width:100%} button{cursor:pointer}.hidden{display:none!important}
+.center{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow)}
+.gate{width:min(450px,100%);padding:32px}.eyebrow{font-size:13px;color:var(--muted);margin-bottom:7px}
+h1,h2,h3,p{margin-top:0}.gate h1{font-size:28px;margin-bottom:8px}.gate p{color:var(--muted);line-height:1.6}
+.pwrow{display:flex;gap:10px;margin-top:20px}.pwrow input{flex:1;min-width:0;border:1px solid var(--line);border-radius:13px;padding:15px;font-size:20px;text-align:center;letter-spacing:5px}
+.primary,.ghost,.soft-btn{border-radius:12px;font-weight:800}.primary{border:0;background:var(--dark);color:#fff;padding:12px 17px}.ghost{border:1px solid var(--line);background:#fff;color:var(--text);padding:10px 13px}.soft-btn{border:1px solid var(--line);background:#fafafa;padding:9px 12px}
+.error{color:var(--danger);font-size:13px;margin-top:10px;min-height:18px}
+.team-select{width:min(980px,100%)}.select-head{text-align:center;margin-bottom:26px}.select-head h1{font-size:34px;margin-bottom:7px}.select-head p{color:var(--muted)}
+.team-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+.team-card{position:relative;overflow:hidden;min-height:165px;border:1px solid var(--line);background:#fff;border-radius:20px;padding:24px;text-align:left;box-shadow:0 5px 20px rgba(0,0,0,.035);transition:.15s}
+.team-card:hover{transform:translateY(-2px);box-shadow:var(--shadow)}.team-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:7px;background:var(--team-color,var(--central))}
+.team-card strong{display:block;font-size:28px;margin-bottom:7px}.team-card span{font-size:14px;color:var(--muted)}.mes-entry{width:100%;margin-top:16px;border:1px solid #d7dde1;background:#10212a;color:#fff;border-radius:18px;padding:18px 22px;display:flex;align-items:center;justify-content:space-between;gap:16px;text-align:left;box-shadow:0 6px 20px rgba(16,33,42,.08)}.mes-entry:hover{transform:translateY(-1px)}.mes-entry strong{display:block;font-size:19px}.mes-entry span{display:block;font-size:12px;color:#b9c9cf;margin-top:4px}.mes-entry b{font-size:13px;white-space:nowrap;color:#fff}
+.topbar{position:sticky;top:0;z-index:30;background:rgba(246,247,249,.94);backdrop-filter:blur(10px);border-bottom:1px solid rgba(229,231,235,.9)}
+.topbar-inner{max-width:1280px;margin:auto;padding:12px 20px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:900}.brand-dot{width:38px;height:38px;border-radius:12px;background:var(--team-color,var(--central));color:#fff;display:grid;place-items:center;font-size:13px}
+
+.week-switcher{display:flex;align-items:center;gap:7px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:5px 7px;min-width:310px;justify-content:center}
+.week-switcher button{border:0;background:#f6f7f9;border-radius:9px;width:34px;height:34px;font-weight:900;font-size:18px}
+.week-switcher .week-now{width:auto;padding:0 10px;font-size:12px}
+.week-info{text-align:center;min-width:170px;line-height:1.25}.week-info strong{display:block;font-size:14px}.week-info small{display:block;color:var(--muted);font-size:11px;margin-top:2px}
+.request-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.request-card{border:1px solid var(--line);border-left:5px solid var(--team-color,var(--central));border-radius:14px;padding:14px;background:#fff}.request-card h3{font-size:17px;margin-bottom:10px}.request-amount{font-size:24px;font-weight:950;margin:7px 0}.request-actions{display:flex;gap:7px;margin-top:12px}.approve-btn{border:0;background:#176b42;color:#fff;border-radius:10px;padding:9px 12px;font-weight:900}.reject-btn{border:1px solid var(--line);background:#fff;color:var(--danger);border-radius:10px;padding:9px 12px;font-weight:900}.week-chip{display:inline-flex;border-radius:999px;background:#f1f5f9;padding:4px 8px;font-size:11px;font-weight:800;color:#475569}.export-checks{display:flex;gap:12px;flex-wrap:wrap;padding:11px;border:1px solid var(--line);border-radius:12px;background:#fafafa}.export-checks label{font-size:13px;font-weight:700;display:flex;align-items:center;gap:5px}.export-checks input{width:17px;height:17px}.success-note{background:#eaf6ef;color:#176b42;border:1px solid #cce8d7;border-radius:12px;padding:11px 13px;font-size:13px;font-weight:700}
+.toast-root{position:fixed;top:88px;right:20px;z-index:300;display:flex;flex-direction:column;gap:10px;pointer-events:none;width:min(360px,calc(100vw - 28px))}
+.toast-msg{background:#fff;border:1px solid #cfe7d8;border-left:5px solid #176b42;border-radius:14px;padding:13px 15px;box-shadow:0 14px 38px rgba(0,0,0,.14);opacity:0;transform:translateY(-8px);transition:.2s ease;pointer-events:auto}
+.toast-msg.show{opacity:1;transform:translateY(0)}
+.toast-msg.error{border-color:#f3c7c7;border-left-color:#b42318}
+.toast-title{font-size:14px;font-weight:900;color:#17191d}.toast-detail{font-size:12px;color:#6b7280;margin-top:4px;line-height:1.45}
+@media(max-width:650px){.toast-root{top:72px;right:14px;left:14px;width:auto}}
+
+
+.top-actions{display:flex;align-items:center;gap:8px}.notify-wrap{position:relative}.notify-btn{position:relative;width:42px;height:42px;border:1px solid var(--line);border-radius:12px;background:#fff;font-size:18px}
+.badge{position:absolute;right:-5px;top:-6px;min-width:19px;height:19px;padding:0 5px;border-radius:999px;background:#b42318;color:#fff;font-size:11px;font-weight:900;display:grid;place-items:center;border:2px solid #fff}
+.notify-panel{position:absolute;right:0;top:49px;width:min(400px,calc(100vw - 26px));background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 18px 60px rgba(0,0,0,.16);padding:10px;z-index:50}
+.notify-head{display:flex;justify-content:space-between;padding:8px 8px 10px;font-weight:900}.device-tools{margin:0 4px 8px;padding:10px;border:1px solid var(--line);border-radius:12px;background:#fafafa}.device-tools-title{font-size:12px;font-weight:900;margin-bottom:7px}.device-tools-row{display:flex;gap:7px;flex-wrap:wrap}.device-tools-row button{flex:1 1 130px;min-height:38px}.push-state{font-size:11px;color:var(--muted);line-height:1.4;margin-top:7px}.notify-item{border-top:1px solid var(--line);padding:11px 9px}.notify-item strong{display:block;font-size:14px;margin-bottom:4px}.notify-item p{margin:0;color:var(--muted);font-size:13px;line-height:1.5}.notify-time{font-size:11px;color:#9ca3af;margin-top:5px}
+.layout{max-width:1280px;margin:auto;display:grid;grid-template-columns:220px 1fr;gap:20px;padding:20px}
+.sidebar{position:sticky;top:78px;align-self:start;height:calc(100vh - 98px);background:#fff;border:1px solid var(--line);border-radius:17px;padding:10px;display:flex;flex-direction:column}
+.nav-main{display:flex;flex-direction:column}.nav-bottom{margin-top:auto;border-top:1px solid var(--line);padding-top:8px}
+.nav-btn{width:100%;border:0;background:transparent;border-radius:11px;text-align:left;padding:11px 12px;color:#40444c;font-weight:800;margin:2px 0}
+.nav-btn.active{background:var(--team-soft,var(--central-soft));color:#111}.nav-btn.debt{font-weight:900}
+.content{min-width:0;max-width:100%;overflow-x:hidden}.page-head{display:flex;justify-content:space-between;align-items:end;gap:14px;margin:3px 0 16px}.page-head h1{font-size:29px;margin-bottom:4px}.sub{color:var(--muted);font-size:13px}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.stat{background:#fff;border:1px solid var(--line);border-radius:16px;padding:17px}.stat .label{font-size:13px;color:var(--muted);margin-bottom:9px}.stat .value{font-size:27px;font-weight:900;letter-spacing:-.5px}.stat .small{font-size:12px;color:var(--muted);margin-top:7px}
+.section{background:#fff;border:1px solid var(--line);border-radius:17px;padding:19px;margin-top:15px}.section-title{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:13px}.section-title h2{font-size:19px;margin:0}.hint{font-size:12px;color:var(--muted)}
+.quick-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:11px}.quick{border:1px solid var(--line);border-radius:15px;background:#fff;padding:16px;text-align:left;min-height:92px}.quick:hover{border-color:#cbd5e1}.quick strong{display:block;font-size:17px;margin-bottom:5px}.quick span{font-size:12px;color:var(--muted)}
+.quick.primary-team{background:var(--team-soft,var(--central-soft));border-color:var(--team-color,var(--central))}
+.row{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px dashed #eceff2;font-size:14px}.row:last-child{border-bottom:0}.row span:first-child{color:var(--muted)}
+table{width:100%;border-collapse:collapse}th,td{padding:11px 9px;border-bottom:1px solid var(--line);text-align:left;font-size:13px}th{background:#fafafa;color:var(--muted);font-weight:800}
+.pill{display:inline-flex;border-radius:999px;padding:5px 8px;font-size:11px;font-weight:900;background:#eef0f2}.pill.ok{background:#e8f5ee;color:var(--income)}.pill.wait{background:#fff3d6;color:var(--warn)}.pill.danger{background:#fdecec;color:var(--danger)}
+.form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:11px}.field label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px}.field input,.field select,.field textarea{width:100%;border:1px solid var(--line);border-radius:11px;background:#fff;padding:11px 12px;outline:none}.field textarea{min-height:86px;resize:vertical}
+.check-line{display:flex;align-items:flex-start;gap:9px;border:1px solid var(--line);border-radius:12px;padding:12px;background:#fafafa}
+.check-line input{width:18px;height:18px;margin-top:1px}
+.check-line label{margin:0;color:#333;font-size:13px;line-height:1.45;cursor:pointer}
+.check-line small{display:block;color:var(--muted);margin-top:3px}
+.recurring-mark{font-size:11px;font-weight:900;color:#5b21b6;background:#f3e8ff;border-radius:999px;padding:3px 7px;margin-left:6px}.field input:focus,.field select:focus,.field textarea:focus{border-color:#aeb5bf}.form-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:13px}
+.notice{background:#fafafa;border:1px solid var(--line);border-radius:13px;padding:13px 14px;color:#555;font-size:13px;line-height:1.55;margin-bottom:13px}
+.plan-list{display:grid;gap:8px}.plan-item{display:grid;grid-template-columns:92px 1fr auto;gap:10px;align-items:center;border:1px solid var(--line);border-left:5px solid var(--team-color,var(--central));border-radius:12px;padding:10px 11px;background:#fff}.plan-date{font-weight:900;font-size:13px}.plan-main strong{display:block;font-size:13px}.plan-main span{font-size:12px;color:var(--muted)}.money-expense{color:var(--danger);font-weight:900}.money-income{color:var(--income);font-weight:900}
+.calendar-tools{display:flex;align-items:center;gap:8px}.calendar-title{font-weight:900;min-width:110px;text-align:center}
+.calendar-scroll{width:100%;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:10px}.calendar{display:grid;grid-template-columns:repeat(7,1fr);border-top:1px solid var(--line);border-left:1px solid var(--line)}
+.cal-head{padding:8px;text-align:center;font-size:12px;font-weight:800;color:var(--muted);background:#fafafa;border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
+.day{min-height:126px;padding:7px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);background:#fff}.day.muted{background:#fbfbfc;color:#a0a5ad}.day-num{font-size:12px;font-weight:900;margin-bottom:5px}.today .day-num{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--dark);color:#fff}
+.cal-event{display:block;width:100%;border-radius:7px;padding:5px 6px;margin:4px 0;font-size:11px;font-weight:900;line-height:1.25;border:1px solid transparent;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cal-event.plan{border-style:dashed}.team-hustle{background:var(--hustle-soft);border-color:var(--hustle)}.team-eleven{background:var(--eleven-soft);border-color:var(--eleven)}.team-loami{background:var(--loami-soft);border-color:var(--loami)}.team-central{background:var(--central-soft);border-color:var(--central)}
+.day{cursor:pointer;transition:box-shadow .12s ease,background .12s ease;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:manipulation}.day:hover{box-shadow:inset 0 0 0 2px #dbe3ef}.day.selected-day{box-shadow:inset 0 0 0 2px #334155;background:#f8fafc}.cal-note{margin-top:4px;padding:4px 5px;border-radius:6px;background:#fff7d6;border:1px solid #f0cf66;color:#655000;font-size:10px;font-weight:800;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cal-schedule{margin-top:4px;padding:4px 5px;border-radius:6px;background:#eff6ff;border:1px solid #93c5fd;color:#1e3a8a;font-size:10px;font-weight:800;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.schedule-list{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}.schedule-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}.schedule-item:last-child{border-bottom:0}.schedule-item .schedule-copy{min-width:0}.schedule-item .schedule-copy strong{display:block;font-size:13px}.schedule-item .schedule-copy span{display:block;color:var(--muted);font-size:11px;margin-top:2px}.schedule-actions{display:flex;gap:6px;flex:0 0 auto}.balance-forecast{margin-top:14px;border:1px solid var(--line);border-radius:14px;padding:14px;background:#fafbfc}.forecast-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:10px}.forecast-head h3{font-size:16px;margin:0}.forecast-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px}.forecast-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px}.forecast-card .name{font-size:11px;color:var(--muted);font-weight:800}.forecast-card .amount{font-size:17px;font-weight:950;margin-top:5px;word-break:break-all}.forecast-card.total{border-color:#94a3b8;background:#f8fafc}.calendar-click-hint{font-size:12px;color:var(--muted)}@media(max-width:850px){.forecast-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.forecast-card.total{grid-column:1/-1}}
+.legend{display:flex;gap:8px;flex-wrap:wrap}.legend span{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:#555}.legend i{width:11px;height:11px;border-radius:3px;display:inline-block}
+.debt-card{border:1px solid var(--line);border-radius:14px;padding:14px;background:#fff}.debt-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:11px}
+.calc-result{background:#fafafa;border:1px solid var(--line);border-radius:13px;padding:14px;margin-top:12px}
+.modal-back{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.38);display:grid;place-items:center;padding:18px}.modal{width:min(500px,100%);background:#fff;border-radius:20px;border:1px solid var(--line);padding:21px;box-shadow:0 24px 80px rgba(0,0,0,.22)}.modal h3{font-size:20px;margin-bottom:7px}.modal p{font-size:13px;color:var(--muted);line-height:1.55}
+.empty{padding:30px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:13px}
+.mobile-nav{display:none}
+@media(max-width:940px){
+ .topbar-inner{flex-wrap:wrap}.week-switcher{order:3;width:100%;min-width:0}.week-info{min-width:150px}.request-grid{grid-template-columns:1fr}
+ .layout{grid-template-columns:1fr;padding:14px 14px 86px}.sidebar{display:none}.cards{grid-template-columns:repeat(2,1fr)}.quick-grid{grid-template-columns:repeat(2,1fr)}
+ .mobile-nav{display:grid;position:fixed;left:0;right:0;bottom:0;z-index:40;grid-template-columns:repeat(5,1fr);background:#fff;border-top:1px solid var(--line);padding:6px 6px calc(6px + env(safe-area-inset-bottom))}
+ .mobile-nav button{border:0;background:transparent;padding:8px 2px;font-size:11px;font-weight:800;color:#555}.mobile-nav button.active{color:#111;background:var(--team-soft,var(--central-soft));border-radius:9px}
+}
+@media(max-width:650px){
+ body{padding-bottom:env(safe-area-inset-bottom)}
+ .topbar-inner{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;padding:8px 10px}.brand{min-width:0}.brand-dot{width:34px;height:34px;border-radius:10px;font-size:11px}.brand span:last-child{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}.top-actions{gap:5px}.notify-btn{width:38px;height:38px;border-radius:10px}.top-actions .ghost{padding:8px 9px;font-size:11px;white-space:nowrap}
+ .week-switcher{grid-column:1/-1;order:initial;width:100%;gap:4px;padding:4px;min-width:0}.week-switcher button{width:32px;height:32px;flex:0 0 auto}.week-info{min-width:0;flex:1}.week-info strong{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.week-info small{font-size:9px}.week-switcher .week-now{padding:0 7px;font-size:10px}
+ .layout{padding:10px 10px calc(82px + env(safe-area-inset-bottom));gap:10px}.content{width:100%;min-width:0;overflow-x:hidden}.center{padding:12px}.gate{padding:24px 17px}.pwrow{flex-direction:column}.pwrow .primary{padding:14px}.pwrow input,.field input,.field select,.field textarea{font-size:16px}.team-grid{grid-template-columns:1fr}.team-card{min-height:110px;padding:19px}.team-card strong{font-size:24px}.team-card span{font-size:13px}.mes-entry{padding:16px 18px}.mes-entry strong{font-size:18px}.mes-entry b{font-size:12px}
+ .select-head h1{font-size:27px}.page-head{align-items:flex-start;flex-direction:column;margin-bottom:11px}.page-head h1{font-size:24px}.sub{font-size:12px}.cards{grid-template-columns:1fr}.quick-grid,.form-grid,.debt-grid{grid-template-columns:1fr}.stat{padding:14px}.stat .value{font-size:clamp(21px,7vw,25px);overflow-wrap:anywhere}.section{padding:13px;margin-top:11px;border-radius:14px}.section-title{align-items:flex-start;flex-wrap:wrap}.section-title h2{font-size:18px}.quick{min-height:78px;padding:14px}.quick strong{font-size:16px}.plan-item{grid-template-columns:72px minmax(0,1fr);gap:7px}.plan-item .soft-btn{grid-column:1/-1}
+ .calendar-scroll{margin:0 -13px;width:calc(100% + 26px);padding:0 13px}.calendar{min-width:560px;font-size:10px}.day{min-height:92px;padding:4px}.day-num{font-size:11px}.cal-event,.cal-note,.cal-schedule{font-size:8.5px;padding:3px 4px}.calendar-tools{width:100%;justify-content:space-between}.calendar-title{min-width:90px}.calendar-click-hint{font-size:10px}.forecast-head{align-items:flex-start;flex-direction:column}.forecast-head .soft-btn{width:100%}.forecast-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.forecast-card{padding:9px}.forecast-card .amount{font-size:15px}.forecast-card.total{grid-column:1/-1}
+ .modal-back{align-items:end;padding:0}.modal{width:100%;max-height:90vh;overflow-y:auto;border-radius:20px 20px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom))}.form-actions{position:sticky;bottom:0;background:#fff;padding-top:8px}.form-actions button{min-height:42px}
+ .notify-panel{position:fixed;top:58px;right:10px;left:10px;width:auto;max-height:72vh;overflow:auto}.device-tools-row{flex-direction:column}.device-tools-row button{flex:auto;width:100%}
+ table{display:block;width:100%;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;white-space:nowrap}.request-actions{flex-wrap:wrap}.request-actions button{flex:1 1 110px}.row{align-items:flex-start}.row strong{text-align:right;overflow-wrap:anywhere}
+ .mobile-nav{overflow:hidden}.mobile-nav button{min-width:0;font-size:10px;line-height:1.15;padding:8px 1px;white-space:normal;word-break:keep-all}
+}
+@media(max-width:390px){.top-actions .ghost{padding:7px 6px;font-size:10px}.brand span:last-child{font-size:12px}.week-info strong{font-size:11px}.week-switcher .week-now{padding:0 5px}.layout{padding-left:8px;padding-right:8px}.section{padding:11px}.calendar-scroll{margin-left:-11px;margin-right:-11px;width:calc(100% + 22px);padding-left:11px;padding-right:11px}}
+
+.history-filter{display:flex;flex-direction:column;gap:10px}.history-filter-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.history-filter-label{font-size:12px;color:var(--muted);font-weight:800}.filter-group{display:flex;gap:6px;flex-wrap:wrap}.filter-btn{border:1px solid var(--line);background:#fff;color:#4b5563;border-radius:10px;padding:8px 11px;font-size:12px;font-weight:850;cursor:pointer}.filter-btn.active{background:var(--dark);border-color:var(--dark);color:#fff}.history-date-range{display:grid;grid-template-columns:repeat(2,minmax(150px,1fr));gap:8px;width:min(430px,100%)}.history-date-range .field{margin:0}.history-date-range input{padding:9px 10px}.history-result-line{font-size:12px;color:var(--muted);font-weight:700}.history-result-line b{color:var(--text)}
+@media(max-width:650px){.history-filter-row{align-items:flex-start;flex-direction:column}.filter-group{width:100%}.filter-btn{flex:1 1 auto;min-height:38px}.history-date-range{grid-template-columns:1fr;width:100%}}
+.approve-btn:disabled{background:#d1d5db!important;color:#6b7280!important;cursor:not-allowed}.fund-warning{margin-top:8px;padding:8px 10px;border-radius:9px;background:#fff1f2;color:#b42318;font-size:12px;font-weight:800}.budget-gap{display:block;margin-top:5px;color:#b42318;font-size:11px;font-weight:850;line-height:1.4}.budget-ok{display:block;margin-top:5px;color:#176b42;font-size:11px;font-weight:800}.budget-reconcile{margin-top:8px;display:flex;gap:7px;flex-wrap:wrap}.budget-reconcile .soft-btn{font-size:11px;padding:7px 9px}</style>
+</head>
+<body>
+<section id="passwordScreen" class="center">
+  <div class="gate panel">
+    <div class="eyebrow">내부 자금관리</div>
+    <h1>비밀번호를 입력하세요</h1>
+    <p>공용 비밀번호로 접속합니다.</p>
+    <div class="pwrow"><input id="pw" inputmode="numeric" maxlength="4" type="password" placeholder="••••"><button class="primary" id="pwBtn">확인</button></div>
+    <div id="pwErr" class="error"></div>
+  </div>
+</section>
+
+<section id="teamScreen" class="center hidden">
+  <div class="team-select">
+    <div class="select-head"><div class="eyebrow">강신나 자금관리</div><h1>관리 대상을 선택하세요</h1><p>선택한 관리 화면으로 바로 이동합니다.</p></div>
+    <div class="team-grid">
+      <button class="team-card" data-team="강신나" style="--team-color:var(--central)"><strong>강신나</strong><span>전체 자금 · 일정 · 예산 · 매출 · 부채 관리</span></button>
+      <button class="team-card" data-team="허슬" style="--team-color:var(--hustle)"><strong>허슬</strong><span>예산 · 매출 · 지출 · 미리 신고</span></button>
+      <button class="team-card" data-team="엘리븐" style="--team-color:var(--eleven)"><strong>엘리븐</strong><span>예산 · 매출 · 지출 · 미리 신고</span></button>
+      <button class="team-card" data-team="로아미" style="--team-color:var(--loami)"><strong>로아미</strong><span>예산 · 매출 · 지출 · 미리 신고</span></button>
+    </div>
+    <button class="mes-entry" type="button" onclick="location.href='/mes'">
+      <div><strong>허슬 MES</strong><span>봉제 생산계획 · 작업자 · 설비 · 간트 · 손익 관리</span></div><b>생산관리 열기 →</b>
+    </button>
+  </div>
+</section>
+
+<section id="mainScreen" class="hidden">
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand"><div class="brand-dot">자금</div><span id="brandTitle"></span></div>
+      <div class="week-switcher" id="weekSwitcher">
+        <button type="button" onclick="moveSelectedWeek(-1)" aria-label="이전 주">‹</button>
+        <div class="week-info"><strong id="selectedWeekLabel"></strong><small id="selectedWeekRange"></small><small style="display:block;color:#8a8f9c;margin-top:2px">일요일 시작 · 토요일 종료</small></div>
+        <button type="button" onclick="moveSelectedWeek(1)" aria-label="다음 주">›</button>
+        <button type="button" class="week-now" onclick="goCurrentWeek()">이번 주</button>
+      </div>
+      <div class="top-actions">
+        <div class="notify-wrap">
+          <button class="notify-btn" id="notifyBtn">🔔<span class="badge" id="notifyCount"></span></button>
+          <div class="notify-panel hidden" id="notifyPanel"></div>
+        </div>
+        <button class="ghost" id="switchTeam">팀 변경</button>
+        <button class="ghost" id="lockBtn">잠금</button>
+      </div>
+    </div>
+  </header>
+  <div class="layout">
+    <aside class="sidebar" id="sidebar"></aside>
+    <main class="content" id="content"></main>
+  </div>
+  <nav class="mobile-nav" id="mobileNav"></nav>
+  <div id="modalRoot"></div>
+</section>
+
+<script>
+
+const TEAM_META={
+  "강신나":{class:"team-central",color:"#334155",soft:"#e2e8f0"},
+  "허슬":{class:"team-hustle",color:"#7c3aed",soft:"#ede9fe"},
+  "엘리븐":{class:"team-eleven",color:"#f59e0b",soft:"#ffedd5"},
+  "로아미":{class:"team-loami",color:"#2dd4bf",soft:"#ccfbf1"}
+};
+
+function seedState(){
+ return {
+   accounts:{"강신나":0,"허슬":0,"엘리븐":0,"로아미":0},
+   budgets:{
+     "허슬":{approved:0,unused:0,extra:0},
+     "엘리븐":{approved:0,unused:0,extra:0},
+     "로아미":{approved:0,unused:0,extra:0}
+   },
+   weeklyBudgets:{},
+   budgetRequests:[],
+   transfers:[],
+   calendarNotes:{},
+   calendarSchedules:[],
+   calendarDataVersion:"v9",
+   budgetRequestVersion:"v10",
+   weekStandard:"sunday",
+   sales:[],
+   expenses:[],
+   plans:[],
+   recurringExpenses:[],
+   fixedCosts:[],
+   debts:[],
+   notifications:{
+     "강신나":[],
+     "허슬":[],
+     "엘리븐":[],
+     "로아미":[]
+   }
+ };
+}
+let state=seedState();
+let stateVersion=0;
+let currentTeam=null;
+let currentPage="홈";
+let selectedWeekStart=iso(startOfWeek(todayISO()));
+const nowForCalendar=new Date();
+let calendarCursor=new Date(nowForCalendar.getFullYear(),nowForCalendar.getMonth(),1);
+let selectedCalendarDate=todayISO();
+let calendarClickTimer=null;
+let calendarSuppressClickUntil=0;
+let selectedPlanId=null;
+let ledgerRangeMode="month";
+let ledgerTypeFilter="all";
+let ledgerCustomStart=todayISO().slice(0,8)+"01";
+let ledgerCustomEnd=todayISO();
+let saveTimer=null;
+let saveInFlight=false;
+let saveQueued=false;
+let deferredInstallPrompt=null;
+let pushUiState={supported:false,permission:"default",subscribed:false,serverEnabled:false,standalone:false,message:"확인 중"};
+window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredInstallPrompt=e;updateDeviceToolsUi()});
+window.addEventListener("appinstalled",()=>{deferredInstallPrompt=null;pushUiState.standalone=true;updateDeviceToolsUi()});
+
+function normalizeState(s){
+ let x=s&&typeof s==="object"?s:seedState();
+ if(x.weekStandard!=="sunday-v8")x=migrateWeeksToSunday(x);
+ x.accounts=x.accounts||{"강신나":0,"허슬":0,"엘리븐":0,"로아미":0};
+ x.budgets=x.budgets||{"허슬":{approved:0,unused:0,extra:0},"엘리븐":{approved:0,unused:0,extra:0},"로아미":{approved:0,unused:0,extra:0}};
+ x.weeklyBudgets=x.weeklyBudgets&&typeof x.weeklyBudgets==="object"?x.weeklyBudgets:{};
+ x.budgetRequests=Array.isArray(x.budgetRequests)?x.budgetRequests:[];
+ x.budgetRequests.forEach(r=>{
+   if(!r.requestType)r.requestType="주간";
+   if(r.requestType!=="추가")r.requestType="주간";
+   if(typeof r.approvedAmount!=="number")r.approvedAmount=Number(r.approvedAmount)||0;
+ });
+ x.budgetRequestVersion="v10";
+ x.transfers=Array.isArray(x.transfers)?x.transfers:[];
+ x.calendarNotes=x.calendarNotes&&typeof x.calendarNotes==="object"?x.calendarNotes:{};
+ x.calendarSchedules=Array.isArray(x.calendarSchedules)?x.calendarSchedules:[];
+ // v8까지의 하루짜리 "일정" 메모를 v9 기간 일정으로 한 번만 변환
+ if(x.calendarDataVersion!=="v9"){
+   Object.entries(x.calendarNotes).forEach(([date,v])=>{
+     if(v&&typeof v==="object"&&v.type==="일정"&&String(v.text||v.memo||"").trim()){
+       const legacyId=`legacy-${date}`;
+       if(!x.calendarSchedules.some(it=>it.id===legacyId))x.calendarSchedules.push({id:legacyId,startDate:date,endDate:date,text:String(v.text||v.memo||"").trim(),createdAt:new Date().toISOString()});
+       delete x.calendarNotes[date];
+     }
+   });
+   x.calendarDataVersion="v9";
+ }
+ x.calendarSchedules=x.calendarSchedules.map(it=>({
+   id:it.id??Date.now()+Math.random(),
+   startDate:String(it.startDate||it.date||todayISO()),
+   endDate:String(it.endDate||it.startDate||it.date||todayISO()),
+   text:String(it.text||it.memo||"")
+ })).filter(it=>it.text&&it.startDate&&it.endDate);
+ const currentWeek=iso(startOfWeek(todayISO()));
+ if(!x.weeklyBudgets[currentWeek]){x.weeklyBudgets[currentWeek]={};["허슬","엘리븐","로아미"].forEach(t=>{const b=x.budgets[t]||{approved:0,unused:0,extra:0};x.weeklyBudgets[currentWeek][t]={approved:Number(b.approved)||0,unused:Number(b.unused)||0,extra:Number(b.extra)||0};});}
+ x.sales=Array.isArray(x.sales)?x.sales:[];
+ x.expenses=Array.isArray(x.expenses)?x.expenses:[];
+ x.plans=Array.isArray(x.plans)?x.plans:[];
+ x.recurringExpenses=Array.isArray(x.recurringExpenses)?x.recurringExpenses:[];
+ x.fixedCosts=Array.isArray(x.fixedCosts)?x.fixedCosts:[];
+ x.debts=Array.isArray(x.debts)?x.debts:[];
+ x.notifications=x.notifications||{"강신나":[],"허슬":[],"엘리븐":[],"로아미":[]};
+ x.expenses.forEach(e=>{if(typeof e.cutBudget!=="boolean")e.cutBudget=false;if(typeof e.budgetDeducted!=="number")e.budgetDeducted=0;if(!e.budgetWeek&&e.date)e.budgetWeek=weekStartISO(e.date);if(!e.expenseFor)e.expenseFor=e.team||"강신나";});
+ return x;
+}
+async function loadRemoteState(){
+ try{
+   const r=await fetch('/api/state',{cache:'no-store'});
+   if(r.status===401)return false;
+   if(!r.ok)throw new Error('state load failed');
+   const data=await r.json();
+   const needsWeekMigration=data.state?.weekStandard!=="sunday-v8";
+   state=normalizeState(data.state);stateVersion=Number(data.version)||0;
+   if(needsWeekMigration)saveState();
+   return true;
+ }catch(e){console.error(e);return false;}
+}
+function saveState(){
+ saveQueued=true;
+ clearTimeout(saveTimer);
+ saveTimer=setTimeout(flushSaveState,80);
+}
+async function flushSaveState(){
+ if(saveInFlight){saveQueued=true;return;}
+ if(!saveQueued)return;
+ saveInFlight=true;saveQueued=false;
+ const version=stateVersion;
+ const snapshot=JSON.parse(JSON.stringify(state));
+ try{
+   const r=await fetch('/api/state',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({version,state:snapshot})});
+   if(r.status===409){
+     const data=await r.json();state=normalizeState(data.state);stateVersion=Number(data.version)||0;
+     alert('다른 사용자가 먼저 내용을 변경했습니다. 최신 내용으로 다시 불러왔습니다. 방금 작업은 한 번 더 확인해 주세요.');
+     renderApp();return;
+   }
+   if(r.status===401){showOnly('passwordScreen');return;}
+   if(!r.ok)throw new Error('state save failed');
+   const data=await r.json();stateVersion=Number(data.version)||stateVersion;
+ }catch(e){
+   console.error(e);saveQueued=true;showToast('저장 연결에 문제가 있습니다.','인터넷 연결을 확인한 뒤 잠시 후 다시 시도해 주세요.','error');
+ }finally{
+   saveInFlight=false;
+   if(saveQueued)saveTimer=setTimeout(flushSaveState,120);
+ }
+}
+async function syncRemoteState(){
+ if(saveInFlight||saveQueued||document.getElementById('mainScreen').classList.contains('hidden'))return;
+ try{
+   const r=await fetch('/api/state',{cache:'no-store'});if(!r.ok)return;
+   const data=await r.json();
+   if(Number(data.version)>stateVersion){state=normalizeState(data.state);stateVersion=Number(data.version);renderApp();}
+ }catch(e){console.error(e);}
+}
+function lastDayOfMonth(y,m){return new Date(y,m+1,0).getDate()}
+function recurringDate(y,m,day){
+ const d=Math.min(day,lastDayOfMonth(y,m));
+ return `${y}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+}
+function materializeRecurringExpenses(){
+ let changed=false;
+ const horizon=new Date(todayISO()+"T00:00:00");
+ horizon.setMonth(horizon.getMonth()+18);
+ (state.recurringExpenses||[]).filter(r=>r.active!==false).forEach(r=>{
+   const start=new Date(r.startDate+"T00:00:00");
+   let cursor=new Date(start.getFullYear(),start.getMonth(),1);
+   const end=new Date(horizon.getFullYear(),horizon.getMonth(),1);
+   while(cursor<=end){
+     const date=recurringDate(cursor.getFullYear(),cursor.getMonth(),r.day);
+     if(date>=r.startDate){
+       const exists=state.plans.some(p=>p.recurringId===r.id&&p.date===date);
+       if(!exists){state.plans.push({id:Date.now()+Math.random(),team:r.team,type:"expense",date,amount:r.amount,name:r.name,status:"planned",recurringId:r.id,isRecurring:true});changed=true;}
+     }
+     cursor.setMonth(cursor.getMonth()+1);
+   }
+ });
+ if(changed)saveState();
+}
+function won(n){return new Intl.NumberFormat("ko-KR").format(Math.round(Number(n)||0))+"원"}
+function shortMoney(n){n=Number(n)||0;if(Math.abs(n)>=100000000)return (n/100000000).toFixed(n%100000000?1:0)+"억";if(Math.abs(n)>=10000)return (n/10000).toFixed(n%10000?1:0)+"만";return new Intl.NumberFormat("ko-KR").format(n)}
+function showToast(message,detail="",type="success"){
+ let root=document.getElementById("toastRoot");
+ if(!root){root=document.createElement("div");root.id="toastRoot";root.className="toast-root";document.body.appendChild(root);}
+ const el=document.createElement("div");el.className=`toast-msg ${type==="error"?"error":""}`;
+ const title=document.createElement("div");title.className="toast-title";title.textContent=message;el.appendChild(title);
+ if(detail){const d=document.createElement("div");d.className="toast-detail";d.textContent=detail;el.appendChild(d);}
+ root.appendChild(el);requestAnimationFrame(()=>el.classList.add("show"));
+ setTimeout(()=>{el.classList.remove("show");setTimeout(()=>el.remove(),220)},2600);
+}
+
+function todayISO(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`}
+function todayLabel(){const d=new Date();return `${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일`}
+function showOnly(id){["passwordScreen","teamScreen","mainScreen"].forEach(x=>document.getElementById(x).classList.add("hidden"));document.getElementById(id).classList.remove("hidden")}
+function teamStyle(team){const m=TEAM_META[team];document.documentElement.style.setProperty("--team-color",m.color);document.documentElement.style.setProperty("--team-soft",m.soft)}
+function notify(team,title,text){state.notifications[team]=state.notifications[team]||[];state.notifications[team].unshift({title,text,time:"방금"});saveState()}
+function monthKey(dateStr){return dateStr?.slice(0,7)}
+function currentMonth(){return todayISO().slice(0,7)}
+function monthSales(team){
+ return state.sales.filter(s=>(!team||s.team===team)&&s.status==="입금완료"&&monthKey(s.receivedAt||s.date)===currentMonth()).reduce((a,b)=>a+b.amount,0)
+}
+function waitingSales(team){return state.sales.filter(s=>(!team||s.team===team)&&s.status==="대기").reduce((a,b)=>a+b.amount,0)}
+function monthExpenses(team){return state.expenses.filter(e=>(!team||e.team===team)&&monthKey(e.date)===currentMonth()).reduce((a,b)=>a+b.amount,0)}
+function totalCash(){return Object.values(state.accounts).reduce((a,b)=>a+b,0)}
+function totalDebt(){return state.debts.reduce((a,b)=>a+b.principal,0)}
+function parseMoney(v){return Number(String(v||"").replace(/[^0-9-]/g,""))||0}
+function startOfWeek(dateStr){
+ const d=new Date(dateStr+"T00:00:00");const day=d.getDay();d.setDate(d.getDate()-day);return d;
+}
+function endOfWeek(dateStr){const d=startOfWeek(dateStr);d.setDate(d.getDate()+6);return d}
+function iso(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`}
+function addDaysISO(dateStr,days){const d=new Date(dateStr+"T00:00:00");d.setDate(d.getDate()+days);return iso(d)}
+function weekStartISO(dateStr){return iso(startOfWeek(dateStr))}
+function weekEndISO(weekStart){return addDaysISO(weekStart,6)}
+function normalizeSundayWeekKey(key,wasMarkedSunday=false){
+ if(!key)return key;
+ const d=new Date(key+"T00:00:00"),day=d.getDay();
+ // v7 used UTC toISOString() on local midnight, so in Korea intended Sunday keys were saved as Saturday.
+ if(wasMarkedSunday&&day===6)return addDaysISO(key,1);
+ return weekStartISO(key);
+}
+function migrateWeeksToSunday(data){
+ const x=data&&typeof data==="object"?data:{};
+ const wasMarkedSunday=x.weekStandard==="sunday";
+ x.weeklyBudgets=x.weeklyBudgets&&typeof x.weeklyBudgets==="object"?x.weeklyBudgets:{};
+ const migrated={};
+ Object.entries(x.weeklyBudgets).forEach(([oldKey,teams])=>{
+   const newKey=normalizeSundayWeekKey(oldKey,wasMarkedSunday);
+   migrated[newKey]=migrated[newKey]||{};
+   Object.entries(teams||{}).forEach(([team,b])=>{
+     if(!migrated[newKey][team])migrated[newKey][team]={approved:0,unused:0,extra:0};
+     const target=migrated[newKey][team];
+     target.approved+=Number(b?.approved)||0;
+     target.unused+=Number(b?.unused)||0;
+     target.extra+=Number(b?.extra)||0;
+   });
+ });
+ x.weeklyBudgets=migrated;
+ (x.budgetRequests||[]).forEach(r=>{if(r.weekStart)r.weekStart=normalizeSundayWeekKey(r.weekStart,wasMarkedSunday)});
+ (x.expenses||[]).forEach(e=>{if(e.date)e.budgetWeek=weekStartISO(e.date)});
+ (x.transfers||[]).forEach(tr=>{if(tr.weekStart)tr.weekStart=normalizeSundayWeekKey(tr.weekStart,wasMarkedSunday)});
+ x.weekStandard="sunday-v8";
+ return x;
+}
+function getWeekBudget(team,weekStart=selectedWeekStart){state.weeklyBudgets=state.weeklyBudgets||{};if(!state.weeklyBudgets[weekStart])state.weeklyBudgets[weekStart]={};if(!state.weeklyBudgets[weekStart][team])state.weeklyBudgets[weekStart][team]={approved:0,unused:0,extra:0};return state.weeklyBudgets[weekStart][team]}
+function syncBudgetMirror(){["허슬","엘리븐","로아미"].forEach(t=>{state.budgets[t]=getWeekBudget(t,selectedWeekStart)})}
+function previousWeekStart(weekStart=selectedWeekStart){return addDaysISO(weekStart,-7)}
+function teamAccountCash(team){return Math.max(0,Number(state.accounts?.[team])||0)}
+function actualUsableBudget(team,weekStart=selectedWeekStart){const ledger=Math.max(0,Number(getWeekBudget(team,weekStart).unused)||0),cash=teamAccountCash(team);return Math.min(ledger,cash)}
+function budgetCashGap(team,weekStart=selectedWeekStart){const ledger=Math.max(0,Number(getWeekBudget(team,weekStart).unused)||0);return Math.max(0,ledger-actualUsableBudget(team,weekStart))}
+function weekCarryover(team,weekStart=selectedWeekStart){return actualUsableBudget(team,previousWeekStart(weekStart))}
+function weekLabelInfo(weekStart=selectedWeekStart){const d=new Date(weekStart+"T00:00:00"),y=d.getFullYear(),m=d.getMonth(),day=d.getDate();const first=new Date(y,m,1),offset=first.getDay(),nth=Math.floor((day+offset-1)/7)+1,end=new Date(weekEndISO(weekStart)+"T00:00:00");return {label:`${y}년 ${m+1}월 ${nth}째주`,range:`${m+1}/${day} ~ ${end.getMonth()+1}/${end.getDate()}`}}
+function updateWeekSwitcher(){const info=weekLabelInfo(),l=document.getElementById("selectedWeekLabel"),r=document.getElementById("selectedWeekRange");if(l)l.textContent=info.label;if(r)r.textContent=info.range}
+window.moveSelectedWeek=function(n){selectedWeekStart=addDaysISO(selectedWeekStart,n*7);sessionStorage.setItem("selectedWeekStart",selectedWeekStart);syncBudgetMirror();renderApp()}
+window.goCurrentWeek=function(){selectedWeekStart=weekStartISO(todayISO());sessionStorage.setItem("selectedWeekStart",selectedWeekStart);syncBudgetMirror();renderApp()}
+function plansForWeek(team,type,weekStart=selectedWeekStart){const s=weekStart,e=weekEndISO(weekStart);return state.plans.filter(p=>p.team===team&&p.type===type&&p.status==="planned"&&p.date>=s&&p.date<=e).sort((a,b)=>a.date.localeCompare(b.date))}
+function dateLabel(s){const d=new Date(s+"T00:00:00");return `${d.getMonth()+1}월 ${d.getDate()}일`}
+function stat(label,value,small=""){return `<div class="stat"><div class="label">${label}</div><div class="value">${value}</div>${small?`<div class="small">${small}</div>`:""}</div>`}
+
+
+function isIOSDevice(){return /iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1)}
+function isStandaloneMode(){return window.matchMedia?.("(display-mode: standalone)").matches===true||window.navigator.standalone===true}
+function base64UrlToUint8Array(base64String){const padding="=".repeat((4-base64String.length%4)%4),base64=(base64String+padding).replace(/-/g,"+").replace(/_/g,"/");const raw=atob(base64);return Uint8Array.from([...raw].map(c=>c.charCodeAt(0)))}
+async function ensureServiceWorker(){if(!("serviceWorker" in navigator))throw new Error("service_worker_unsupported");const reg=await navigator.serviceWorker.register("/sw.js",{scope:"/"});await navigator.serviceWorker.ready;return reg}
+async function refreshPushStatus(){
+ pushUiState.standalone=isStandaloneMode();
+ pushUiState.permission=("Notification" in window)?Notification.permission:"unsupported";
+ pushUiState.supported=("serviceWorker" in navigator)&&("PushManager" in window)&&("Notification" in window);
+ if(!pushUiState.supported){pushUiState.message="이 브라우저는 모바일 푸시 알림을 지원하지 않습니다.";updateDeviceToolsUi();return}
+ try{
+   const cfg=await fetch("/api/push/config",{cache:"no-store"});
+   if(!cfg.ok)throw new Error("config");
+   const j=await cfg.json();pushUiState.serverEnabled=!!j.enabled;
+   const reg=await ensureServiceWorker();const sub=await reg.pushManager.getSubscription();pushUiState.subscribed=!!sub;
+   if(pushUiState.subscribed)pushUiState.message=`${currentTeam||"현재 팀"} 변경사항 알림이 이 기기에 연결되어 있습니다.`;
+   else if(isIOSDevice()&&!pushUiState.standalone)pushUiState.message="iPhone/iPad는 먼저 홈 화면에 추가한 앱으로 열어야 알림을 켤 수 있습니다.";
+   else pushUiState.message="알림을 켜면 현재 선택한 팀의 주요 변경사항을 휴대폰으로 받을 수 있습니다.";
+ }catch(e){pushUiState.serverEnabled=false;pushUiState.message="푸시 알림 서버 설정을 확인할 수 없습니다."}
+ updateDeviceToolsUi();
+}
+function updateDeviceToolsUi(){
+ const st=document.getElementById("pushStateText"),btn=document.getElementById("pushToggleBtn"),install=document.getElementById("installAppBtn");
+ if(st)st.textContent=pushUiState.message;
+ if(btn){btn.textContent=pushUiState.subscribed?"모바일 알림 끄기":"모바일 알림 켜기";btn.disabled=!pushUiState.supported||!pushUiState.serverEnabled}
+ if(install){install.textContent=isStandaloneMode()?"앱으로 실행 중":(deferredInstallPrompt?"앱으로 설치":"홈 화면 추가 안내");install.disabled=isStandaloneMode()}
+}
+window.installAppShortcut=async function(){
+ if(isStandaloneMode())return showToast("이미 앱으로 실행 중입니다.");
+ if(deferredInstallPrompt){deferredInstallPrompt.prompt();await deferredInstallPrompt.userChoice;deferredInstallPrompt=null;return refreshPushStatus()}
+ if(isIOSDevice())return alert("iPhone/iPad: Safari의 공유 버튼을 누른 뒤 ‘홈 화면에 추가’를 선택하세요. 추가된 강신나 앱을 다시 열고 모바일 알림을 켜면 됩니다.");
+ alert("브라우저 메뉴에서 ‘앱 설치’ 또는 ‘홈 화면에 추가’를 선택하세요.");
+}
+async function postPushSubscription(sub){const r=await fetch("/api/push/subscribe",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({subscription:sub.toJSON(),team:currentTeam})});if(!r.ok)throw new Error("subscribe_failed")}
+window.togglePushNotifications=async function(){
+ try{
+   const reg=await ensureServiceWorker();let sub=await reg.pushManager.getSubscription();
+   if(sub){await fetch("/api/push/unsubscribe",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({endpoint:sub.endpoint})});await sub.unsubscribe();pushUiState.subscribed=false;pushUiState.message="모바일 알림이 꺼졌습니다.";showToast("모바일 알림을 껐습니다.");return updateDeviceToolsUi()}
+   if(isIOSDevice()&&!isStandaloneMode())return alert("iPhone/iPad에서는 Safari 공유 → 홈 화면에 추가 후, 홈 화면의 강신나 앱으로 열어서 알림을 켜주세요.");
+   const permission=await Notification.requestPermission();pushUiState.permission=permission;if(permission!=="granted")return showToast("알림 권한이 허용되지 않았습니다.","휴대폰 설정에서 알림 권한을 확인해주세요.","error");
+   const cfg=await fetch("/api/push/config",{cache:"no-store"}).then(r=>r.json());if(!cfg.enabled||!cfg.publicKey)throw new Error("push_disabled");
+   sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:base64UrlToUint8Array(cfg.publicKey)});await postPushSubscription(sub);pushUiState.subscribed=true;pushUiState.message=`${currentTeam} 변경사항 알림이 이 기기에 연결되었습니다.`;showToast("모바일 알림을 켰습니다.",`${currentTeam} 알림을 받습니다.`);updateDeviceToolsUi();
+ }catch(e){console.error(e);showToast("모바일 알림 설정에 실패했습니다.","앱 설치 상태와 알림 권한을 확인해주세요.","error");refreshPushStatus()}
+}
+async function syncExistingPushTeam(){
+ if(!currentTeam||!("serviceWorker" in navigator)||!("PushManager" in window))return;
+ try{const reg=await ensureServiceWorker(),sub=await reg.pushManager.getSubscription();if(sub)await postPushSubscription(sub)}catch(e){console.error(e)}
+}
+
+async function unlock(){
+ const password=document.getElementById("pw").value;
+ const btn=document.getElementById("pwBtn");btn.disabled=true;
+ try{
+   const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password})});
+   if(r.ok){document.getElementById("pwErr").textContent="";document.getElementById("pw").value="";await loadRemoteState();showOnly("teamScreen");}
+   else document.getElementById("pwErr").textContent="비밀번호가 올바르지 않습니다.";
+ }catch(e){document.getElementById("pwErr").textContent="서버에 연결할 수 없습니다.";}finally{btn.disabled=false;}
+}
+document.getElementById("pwBtn").onclick=unlock;
+document.getElementById("pw").onkeydown=e=>{if(e.key==="Enter")unlock()};
+document.querySelectorAll(".team-card").forEach(b=>b.onclick=()=>{currentTeam=b.dataset.team;currentPage="홈";teamStyle(currentTeam);sessionStorage.setItem("currentTeam",currentTeam);showOnly("mainScreen");renderApp();syncExistingPushTeam();});
+document.getElementById("switchTeam").onclick=()=>{currentTeam=null;sessionStorage.removeItem("currentTeam");showOnly("teamScreen")};
+document.getElementById("lockBtn").onclick=async()=>{try{await fetch('/api/logout',{method:'POST'})}catch(e){}sessionStorage.clear();currentTeam=null;showOnly("passwordScreen")};
+document.getElementById("notifyBtn").onclick=()=>{const p=document.getElementById("notifyPanel"),opening=p.classList.contains("hidden");p.classList.toggle("hidden");if(opening)refreshPushStatus()};
+document.addEventListener("click",e=>{if(!e.target.closest(".notify-wrap"))document.getElementById("notifyPanel")?.classList.add("hidden")});
+
+function menus(team){
+ if(team==="강신나") return {main:["홈","지출 등록","통합 캘린더","주간예산","월간예산","매출·지출","자금·계좌","고정비","설정"],bottom:["부채·상환계획"]};
+ return {main:["홈","예산 요청","매출 등록","지출 등록","미리 신고","잔액 입력","내역 보기"],bottom:[]};
+}
+function renderNav(){
+ const m=menus(currentTeam),side=document.getElementById("sidebar");
+ side.innerHTML=`<div class="nav-main">${m.main.map(x=>`<button class="nav-btn ${x===currentPage?"active":""}" data-p="${x}">${x}</button>`).join("")}</div>
+ <div class="nav-bottom">${m.bottom.map(x=>`<button class="nav-btn debt ${x===currentPage?"active":""}" data-p="${x}">▣ ${x}</button>`).join("")}</div>`;
+ side.querySelectorAll("[data-p]").forEach(b=>b.onclick=()=>{currentPage=b.dataset.p;renderApp()});
+ const mobileItems=currentTeam==="강신나"?["홈","지출 등록","통합 캘린더","주간예산","자금·계좌"]:["홈","예산 요청","매출 등록","지출 등록","미리 신고"];
+ const mob=document.getElementById("mobileNav");mob.innerHTML=mobileItems.map(x=>`<button class="${x===currentPage?"active":""}" data-p="${x}">${x.replace("·상환계획","")}</button>`).join("");
+ mob.querySelectorAll("[data-p]").forEach(b=>b.onclick=()=>{currentPage=b.dataset.p;renderApp()});
+}
+function renderNotifications(){
+ const arr=state.notifications[currentTeam]||[];const count=document.getElementById("notifyCount");count.textContent=arr.length;count.classList.toggle("hidden",arr.length===0);
+ document.getElementById("notifyPanel").innerHTML=`<div class="notify-head"><span>${currentTeam} 알림</span><span class="sub">${arr.length}건</span></div><div class="device-tools"><div class="device-tools-title">휴대폰 앱 · 알림</div><div class="device-tools-row"><button class="soft-btn" id="installAppBtn" onclick="installAppShortcut()">홈 화면 추가 안내</button><button class="primary" id="pushToggleBtn" onclick="togglePushNotifications()">모바일 알림 켜기</button></div><div class="push-state" id="pushStateText">알림 상태를 확인 중입니다.</div></div>${arr.length?arr.slice(0,8).map(n=>`<div class="notify-item"><strong>${n.title}</strong><p>${n.text}</p><div class="notify-time">${n.time}</div></div>`).join(""):`<div class="empty">새 알림이 없습니다.</div>`}`;updateDeviceToolsUi();
+}
+
+function planPanel(team,type){
+ const arr=plansForWeek(team,type);
+ if(!arr.length)return `<div class="notice">이번 주에 도래한 미리 신고 내역이 없습니다.</div>`;
+ return `<div class="notice"><b>이번 주 미리 신고 ${arr.length}건</b><br>등록 예정일이 이번 주에 포함된 항목입니다. 실제 처리할 때 아래 버튼으로 가져올 수 있습니다.</div>
+ <div class="plan-list">${arr.map(p=>`<div class="plan-item" style="--team-color:${TEAM_META[team].color}">
+   <div class="plan-date">${dateLabel(p.date)}</div><div class="plan-main"><strong>${p.name}</strong><span class="${type==="expense"?"money-expense":"money-income"}">${type==="expense"?"-":"+"}${won(p.amount)}</span></div>
+   <button class="soft-btn" onclick="usePlan(${p.id})">${type==="expense"?"지출":"매출"} 등록으로 가져오기</button>
+ </div>`).join("")}</div>`;
+}
+window.usePlan=function(id){selectedPlanId=id;const p=state.plans.find(x=>x.id===id);currentPage=p.type==="expense"?"지출 등록":"매출 등록";renderApp()}
+
+function teamHome(team){
+ const b=getWeekBudget(team),info=weekLabelInfo(),usable=actualUsableBudget(team),gap=budgetCashGap(team);
+ const hasBudgetRequest=state.budgetRequests.some(r=>r.team===team&&r.weekStart===selectedWeekStart);
+ const budgetActionTitle=hasBudgetRequest?"추가 예산 요청":"이번 주 예산 요청";
+ const budgetActionText=hasBudgetRequest?"이미 신청한 예산 외에 더 필요한 금액만 추가 요청":"선택한 주 기준으로 필요한 기본 예산을 요청";
+ const budgetSmall=gap>0?`장부 미사용 ${won(b.unused)} · 계좌 ${won(state.accounts[team])}<span class="budget-gap">⚠ 실제 계좌 기준으로 ${won(gap)} 부족</span><span class="budget-reconcile"><button class="soft-btn" onclick="reconcileBudgetToCash('${team}','${selectedWeekStart}')">예산을 실제 잔액에 맞추기</button></span>`:`장부 미사용 ${won(b.unused)} · 계좌잔액 범위 내`;
+ return `<div class="page-head"><div><h1>${team}</h1><div class="sub">예산·매출·지출·예정 내역을 빠르게 관리합니다.</div></div><div class="week-chip">${info.label} · ${info.range}</div></div>
+ <div class="cards">${stat("현재 계좌잔액",won(state.accounts[team]),`<button class="soft-btn" onclick="openBalance('${team}')">실제 잔액 맞추기</button>`)}${stat("이번 달 실매출",won(monthSales(team)),"입금완료 기준")}${stat("이번 달 실제 지출",won(monthExpenses(team)),"등록된 지출 합계")}${stat("선택 주 승인예산",won(b.approved),b.extra?`추가예산 ${won(b.extra)} 포함`:info.range)}${stat("선택 주 실제 사용가능예산",won(usable),budgetSmall)}${stat("입금 대기",won(waitingSales(team)))}</div>
+ ${gap>0?`<div class="fund-warning">⚠ 장부상 미사용예산 ${won(b.unused)}보다 실제 ${team} 계좌잔액 ${won(state.accounts[team])}이 적습니다. 지출 가능액과 다음 주 이월액은 자동으로 <b>${won(usable)}</b>까지만 인정합니다.</div>`:""}
+ <section class="section"><div class="section-title"><h2>빠른 실행</h2><div class="hint">자주 쓰는 기능</div></div><div class="quick-grid"><button class="quick primary-team" onclick="go('예산 요청')"><strong>${budgetActionTitle}</strong><span>${budgetActionText}</span></button><button class="quick" onclick="go('지출 등록')"><strong>지출 등록</strong><span>부가세 포함 금액 입력 · 계좌와 해당 주 예산 자동 차감</span></button><button class="quick" onclick="go('매출 등록')"><strong>매출 등록</strong><span>입금완료 시 해당 계좌잔액 자동 증가</span></button><button class="quick" onclick="go('미리 신고')"><strong>지출·매출 미리 신고</strong><span>미래 날짜를 골라 예상 금액 등록</span></button><button class="quick" onclick="go('잔액 입력')"><strong>주말 잔액 입력</strong><span>선택 주의 남은 예산을 정산</span></button><button class="quick" onclick="go('내역 보기')"><strong>내역 보기</strong><span>매출·지출·예정 내역 확인</span></button></div></section>
+ <section class="section"><div class="section-title"><h2>선택 주 미리 신고</h2><div class="hint">${info.range}</div></div>${[...plansForWeek(team,"expense"),...plansForWeek(team,"income")].sort((a,b)=>a.date.localeCompare(b.date)).map(p=>`<div class="row"><span>${dateLabel(p.date)} · ${p.name}</span><strong class="${p.type==="expense"?"money-expense":"money-income"}">${p.type==="expense"?"-":"+"}${won(p.amount)}</strong></div>`).join("")||`<div class="empty">이 주의 예정 내역이 없습니다.</div>`}</section>`;
+}
+
+function budgetPage(team){
+ const b=getWeekBudget(team),prevBudget=getWeekBudget(team,previousWeekStart(selectedWeekStart)),carryRaw=Math.max(0,Number(prevBudget.unused)||0),carry=weekCarryover(team),carryGap=Math.max(0,carryRaw-carry),planned=plansForWeek(team,"expense").reduce((a,p)=>a+p.amount,0),info=weekLabelInfo();
+ const existing=state.budgetRequests.filter(r=>r.team===team&&r.weekStart===selectedWeekStart).sort((a,b)=>(b.createdAt||"").localeCompare(a.createdAt||""));
+ const hasInitial=existing.length>0;
+ const approvedExtra=existing.filter(r=>r.requestType==="추가"&&r.status==="승인").reduce((a,r)=>a+(Number(r.approvedAmount||r.requestedAmount)||0),0);
+ const pendingTotal=existing.filter(r=>r.status==="요청").reduce((a,r)=>a+(Number(r.requestedAmount)||0),0);
+ const form=hasInitial?`<section class="section">
+   <div class="notice"><b>추가 예산 요청</b><br>이번 주 기본 예산은 이미 신청했습니다. 이제 <b>더 필요한 금액만</b> 입력하면 됩니다. 기존 50만원을 80만원으로 다시 바꿔 신청할 필요가 없습니다.</div>
+   <div class="row"><span>현재 이 주 승인예산</span><strong>${won(b.approved)}</strong></div>
+   <div class="row"><span>승인된 추가예산</span><strong>${won(approvedExtra)}</strong></div>
+   <div class="row"><span>현재 승인 대기</span><strong>${won(pendingTotal)}</strong></div>
+   <div class="form-grid" style="margin-top:14px"><div class="field"><label>추가로 필요한 금액</label><input id="extraBudgetAmount" inputmode="numeric" placeholder="예: 300,000"></div><div class="field"><label>추가 요청 사유</label><input id="budgetMemo" placeholder="예: 광고비 추가 / 긴급 제작비"></div></div>
+   <div class="form-actions"><button class="primary" onclick="submitExtraBudget('${team}')">추가 예산 요청</button></div>
+ </section>`:`<section class="section">
+   <div class="notice"><b>이번 주 최초 예산 요청</b><br>처음 한 번만 이번 주 목표 예산을 입력합니다. 이후 더 필요한 돈이 생기면 ‘추가 예산 요청’으로 금액만 추가하면 됩니다.</div>
+   <div class="row"><span>전주 장부상 미사용예산</span><strong>${won(carryRaw)}</strong></div><div class="row"><span>실제 이월 가능액</span><strong>${won(carry)}</strong></div>${carryGap>0?`<div class="fund-warning">⚠ 전주 장부에는 ${won(carryRaw)}이 남아 있지만 현재 ${team} 계좌잔액은 ${won(state.accounts[team])}입니다. 이번 주 예산 요청 계산에서는 ${won(carry)}만 이월액으로 인정합니다.</div>`:""}<div class="row"><span>이 주 미리 신고된 지출</span><strong class="money-expense">${won(planned)}</strong></div><div class="row"><span>현재 이 주 승인예산</span><strong>${won(b.approved)}</strong></div>
+   <div class="form-grid" style="margin-top:14px"><div class="field"><label>이번 주 목표 예산</label><input id="budgetTarget" inputmode="numeric" placeholder="예: 500,000"></div><div class="field"><label>메모</label><input id="budgetMemo" placeholder="예: 광고 / 제작 / 운영비"></div></div>
+   <div id="budgetCalc" class="calc-result"><div class="row"><span>강신나 승인 요청액</span><strong>금액 입력 전</strong></div></div><div class="form-actions"><button class="primary" onclick="submitBudget('${team}')">${info.label} 예산 요청</button></div>
+ </section>`;
+ return `<div class="page-head"><div><h1>${hasInitial?"추가 예산 요청":"예산 요청"}</h1><div class="sub">${info.label} (${info.range}) 기준입니다. 최초 신청 후에는 필요한 금액만 추가 신청할 수 있습니다.</div></div></div>${planPanel(team,"expense")}${form}<section class="section"><div class="section-title"><h2>이 주 요청 내역</h2><div class="hint">기본예산과 추가예산을 따로 확인</div></div>${existing.length?`<table><thead><tr><th>구분</th><th>요청액</th><th>기준</th><th>메모</th><th>상태</th></tr></thead><tbody>${existing.map(r=>`<tr><td><span class="pill ${r.requestType==="추가"?"wait":""}">${r.requestType==="추가"?"추가예산":"주간예산"}</span></td><td>${won(r.requestedAmount)}</td><td>${r.requestType==="추가"?"추가 요청":won(r.targetAmount)}</td><td>${r.memo||"-"}</td><td><span class="pill ${r.status==="승인"?"ok":r.status==="거절"?"danger":"wait"}">${r.status}</span></td></tr>`).join("")}</tbody></table>`:`<div class="empty">아직 요청한 예산이 없습니다.</div>`}</section>`;
+}
+window.submitBudget=function(team){
+ const existing=state.budgetRequests.some(r=>r.team===team&&r.weekStart===selectedWeekStart);
+ if(existing)return submitExtraBudget(team);
+ const target=parseMoney(document.getElementById("budgetTarget").value),memo=document.getElementById("budgetMemo").value||"주간 운영예산";if(!target)return alert("목표 예산을 입력하세요.");
+ const carry=weekCarryover(team),currentApproved=getWeekBudget(team).approved,need=Math.max(0,target-carry-currentApproved);if(need<=0)return alert("현재 승인예산과 전주 이월액으로 목표 예산이 이미 충족됩니다.");
+ const req={id:Date.now(),team,weekStart:selectedWeekStart,requestType:"주간",targetAmount:target,carryover:carry,currentApproved,requestedAmount:need,memo,status:"요청",createdAt:new Date().toISOString(),approvedAmount:0};state.budgetRequests.push(req);notify("강신나",`${team} 주간 예산 요청`,`${weekLabelInfo(selectedWeekStart).label} · ${won(need)} 승인 요청 · ${memo}`);notify(team,"주간 예산 요청 접수",`${weekLabelInfo(selectedWeekStart).label} ${won(need)} 요청이 접수되었습니다.`);saveState();showToast("주간 예산 요청이 등록되었습니다.",`${weekLabelInfo(selectedWeekStart).label} · ${won(need)} 요청`);renderApp();
+}
+window.submitExtraBudget=function(team){
+ const amount=parseMoney(document.getElementById("extraBudgetAmount")?.value),memo=document.getElementById("budgetMemo")?.value.trim()||"추가 운영예산";
+ if(!amount)return alert("추가로 필요한 금액을 입력하세요.");
+ const currentApproved=Number(getWeekBudget(team).approved)||0;
+ const req={id:Date.now(),team,weekStart:selectedWeekStart,requestType:"추가",targetAmount:0,carryover:0,currentApproved,requestedAmount:amount,memo,status:"요청",createdAt:new Date().toISOString(),approvedAmount:0};
+ state.budgetRequests.push(req);
+ notify("강신나",`${team} 추가 예산 요청`,`${weekLabelInfo(selectedWeekStart).label} · 추가 ${won(amount)} · ${memo}`);
+ notify(team,"추가 예산 요청 접수",`${weekLabelInfo(selectedWeekStart).label} 추가예산 ${won(amount)} 요청이 접수되었습니다.`);
+ saveState();showToast("추가 예산 요청이 등록되었습니다.",`${weekLabelInfo(selectedWeekStart).label} · +${won(amount)}`);renderApp();
+}
+
+function salesPage(team){
+ const plan=selectedPlanId?state.plans.find(x=>x.id===selectedPlanId):null;
+ return `<div class="page-head"><div><h1>매출 등록</h1><div class="sub">입금완료로 저장하면 계좌잔액이 자동 증가합니다.</div></div></div>
+ ${planPanel(team,"income")}
+ <section class="section"><div class="form-grid">
+  <div class="field"><label>거래명</label><input id="saleName" value="${plan?.type==="income"?plan.name:""}" placeholder="예: 거래처 납품"></div>
+  <div class="field"><label>금액</label><input id="saleAmount" inputmode="numeric" value="${plan?.type==="income"?plan.amount:""}" placeholder="0원"></div>
+  <div class="field"><label>상태</label><select id="saleStatus"><option>주문</option><option>대기</option><option selected>입금완료</option></select></div>
+  <div class="field"><label>날짜</label><input id="saleDate" type="date" value="${plan?.type==="income"?plan.date:todayISO()}"></div>
+  <div class="field"><label>입금계좌</label><select id="saleAccount"><option>${team}</option><option>강신나</option></select></div>
+  <div class="field"><label>메모</label><input id="saleMemo" placeholder="선택 입력"></div>
+ </div><div class="form-actions"><button class="primary" onclick="saveSale('${team}')">매출 저장</button></div></section>`;
+}
+window.saveSale=function(team){
+ const name=document.getElementById("saleName").value.trim(),amount=parseMoney(document.getElementById("saleAmount").value),status=document.getElementById("saleStatus").value,date=document.getElementById("saleDate").value,account=document.getElementById("saleAccount").value;
+ if(!name||!amount||!date)return alert("거래명, 금액, 날짜를 입력하세요.");
+ state.sales.push({id:Date.now(),team,name,amount,status,date,receivedAt:status==="입금완료"?date:null,account});
+ if(status==="입금완료"){state.accounts[account]+=amount;notify(team,"매출 입금",`${name} ${won(amount)}이 ${account} 계좌에 반영되었습니다.`);notify("강신나",`${team} 매출 입금`,`${name} +${won(amount)} · ${account} 계좌`)}
+ if(selectedPlanId){const p=state.plans.find(x=>x.id===selectedPlanId);if(p)p.status="realized";selectedPlanId=null}
+ saveState();showToast("매출이 등록되었습니다.",status==="입금완료"?`${won(amount)} · ${account} 계좌 반영`:`${status} 상태로 저장`);renderApp();
+}
+
+function expensePage(team){
+ const isCentral=team==="강신나";
+ const plan=!isCentral&&selectedPlanId?state.plans.find(x=>x.id===selectedPlanId):null;
+ const pv=plan?.type==="expense"?plan:null;
+ return `<div class="page-head"><div><h1>${isCentral?"강신나 지출 등록":"지출 등록"}</h1><div class="sub">${isCentral?"강신나 자체 운영비·고정 외 지출을 강신나 본계좌에서 바로 등록합니다.":"부가세 포함 총액을 기준으로 계좌와 사용가능 예산을 자동 차감합니다."}</div></div></div>
+ ${isCentral?"":planPanel(team,"expense")}
+ <section class="section"><div class="notice"><b>부가세 포함 지출 기준</b><br>총 결제금액을 입력하면 공급가액과 부가세를 자동 계산합니다. 일반 과세 10% 기준으로 부가세는 총액의 1/11로 계산합니다.${isCentral?" 강신나 자체 지출은 팀 주간예산을 차감하지 않습니다.":""}</div>
+ <div class="form-grid">
+  <div class="field"><label>지출명</label><input id="expName" value="${pv?pv.name:""}" placeholder="예: 광고비 / 사무용품"></div>
+  <div class="field"><label>부가세 포함 총액</label><input id="expAmount" inputmode="numeric" value="${pv?pv.amount:""}" placeholder="0원"></div>
+  <div class="field"><label>지출일</label><input id="expDate" type="date" value="${pv?pv.date:todayISO()}"></div>
+  <div class="field"><label>출금계좌</label>${isCentral?`<input value="강신나" disabled><input id="expAccount" type="hidden" value="강신나">`:`<select id="expAccount"><option>${team}</option><option>강신나</option></select>`}</div>
+  ${isCentral?`<input id="expBudget" type="hidden" value="no">`:`<div class="field"><label>예산 처리</label><select id="expBudget"><option value="yes" selected>일반 지출 · 미사용예산도 차감</option><option value="no">예산 외 지출 · 계좌만 차감</option></select></div>`}
+  <div class="field"><label>누구를 위한 지출인가요?</label><select id="expFor"><option value="${team}">${team} 자체</option>${["강신나","허슬","엘리븐","로아미"].filter(t=>t!==team).map(t=>`<option value="${t}">${t}를 위한 결제</option>`).join("")}<option value="공통">여러 팀 공통</option></select><div class="hint" style="margin-top:5px">결제팀과 예산 차감 주체는 그대로 유지되고, 비용 사용 대상만 기록합니다.</div></div>
+  <div class="field"><label>메모</label><input id="expMemo" placeholder="선택 입력"></div>
+ </div>
+ <div id="vatPreview" class="calc-result"><div class="row"><span>공급가액</span><strong>0원</strong></div><div class="row"><span>부가세</span><strong>0원</strong></div><div class="row"><span>총 출금</span><strong>0원</strong></div></div>
+ <div class="form-actions"><button class="primary" onclick="saveExpense('${team}')">지출 저장</button></div></section>`;
+}
+window.saveExpense=function(team){
+ const isCentral=team==="강신나";
+ const name=document.getElementById("expName").value.trim(),amount=parseMoney(document.getElementById("expAmount").value),date=document.getElementById("expDate").value,account=isCentral?"강신나":document.getElementById("expAccount").value,cut=!isCentral&&document.getElementById("expBudget").value==="yes",expenseFor=document.getElementById("expFor")?.value||team;
+ if(!name||!amount||!date)return alert("지출명, 금액, 날짜를 입력하세요.");if(state.accounts[account]<amount&&!confirm("계좌잔액보다 큰 지출입니다. 그래도 저장할까요?"))return;if(!isCentral&&!cut&&!confirm("이 지출은 ‘예산 외 지출’로 저장되어 계좌만 줄고 미사용예산은 줄지 않습니다. 정말 예산 외 지출이 맞나요?"))return;
+ const vat=Math.round(amount/11),supply=amount-vat;
+ const expenseWeek=weekStartISO(date),weekBudget=isCentral?null:getWeekBudget(team,expenseWeek);
+ const budgetDeducted=cut?Math.min(weekBudget.unused,amount):0;
+ state.expenses.push({id:Date.now(),team,name,amount,date,account,expenseFor,vatIncluded:true,vat,supply,cutBudget:cut,budgetDeducted,budgetWeek:expenseWeek,memo:document.getElementById("expMemo")?.value||""});
+ state.accounts[account]-=amount;
+ if(cut)weekBudget.unused=Math.max(0,weekBudget.unused-budgetDeducted);
+ syncBudgetMirror();
+ if(isCentral){notify("강신나","강신나 자체 지출",`${name} -${won(amount)} · 사용 대상 ${expenseFor} · 강신나 계좌잔액 ${won(state.accounts["강신나"])}`)}
+ else{notify(team,"지출 반영",`${name} -${won(amount)} · 사용 대상 ${expenseFor} · 계좌잔액 ${won(state.accounts[account])}${cut?` · ${weekLabelInfo(expenseWeek).label} 미사용예산 ${won(weekBudget.unused)}`:""}`);notify("강신나",`${team} 지출`,`${name} -${won(amount)} · 사용 대상 ${expenseFor} · ${account} 계좌`)}
+ if(selectedPlanId){const p=state.plans.find(x=>x.id===selectedPlanId);if(p)p.status="realized";selectedPlanId=null}
+ saveState();showToast("지출이 등록되었습니다.",`${team} 결제 · ${expenseFor} 사용 · ${won(amount)}`);renderApp();
+}
+
+function planPage(team){
+ return `<div class="page-head"><div><h1>지출·매출 미리 신고</h1><div class="sub">미래 날짜를 정해 예상 지출·매출을 등록하고, 고정지출은 매달 자동 생성할 수 있습니다.</div></div></div>
+ <section class="section"><div class="form-grid">
+  <div class="field"><label>구분</label><select id="planType" onchange="toggleRecurringOption()"><option value="expense">예상 지출</option><option value="income">예상 매출·입금</option></select></div>
+  <div class="field"><label>예정일</label><input id="planDate" type="date" value="${todayISO()}"></div>
+  <div class="field"><label>내용</label><input id="planName" placeholder="예: 제작비 / 거래처 입금"></div>
+  <div class="field"><label>예상 금액</label><input id="planAmount" inputmode="numeric" placeholder="0원"></div>
+ </div>
+ <div id="recurringBox" class="check-line" style="margin-top:12px">
+   <input id="planRecurring" type="checkbox">
+   <label for="planRecurring"><b>매달 같은 날 고정지출로 등록</b>
+     <small>체크하면 선택한 날짜의 ‘일’을 기준으로 매달 예정지출이 자동 생성됩니다. 예: 8월 15일 등록 → 매월 15일.</small>
+   </label>
+ </div>
+ <div class="form-actions"><button class="primary" onclick="savePlan('${team}')">미리 신고 등록</button></div></section>
+ <section class="section"><div class="section-title"><h2>${team} 고정지출</h2><div class="hint">매달 자동 생성되는 반복 지출</div></div>
+ ${renderRecurringList(team)}
+ </section>
+ <section class="section"><div class="section-title"><h2>${team} 예정 내역</h2><div class="hint">실제 등록 전까지 잔액에는 반영되지 않습니다.</div></div>
+ ${renderPlanList(state.plans.filter(p=>p.team===team&&p.status==="planned").sort((a,b)=>a.date.localeCompare(b.date)))}</section>`;
+}
+window.toggleRecurringOption=function(){
+ const type=document.getElementById("planType")?.value;
+ const box=document.getElementById("recurringBox");
+ const check=document.getElementById("planRecurring");
+ if(!box||!check)return;
+ const isExpense=type==="expense";
+ box.style.opacity=isExpense?"1":".45";
+ check.disabled=!isExpense;
+ if(!isExpense)check.checked=false;
+}
+function renderRecurringList(team){
+ const arr=(state.recurringExpenses||[]).filter(r=>r.team===team&&r.active!==false);
+ if(!arr.length)return `<div class="empty">등록된 고정지출이 없습니다.</div>`;
+ return `<div class="plan-list">${arr.map(r=>`<div class="plan-item" style="--team-color:${TEAM_META[team].color}">
+   <div class="plan-date">매월 ${r.day}일</div>
+   <div class="plan-main"><strong>${r.name}<span class="recurring-mark">고정</span></strong><span class="money-expense">-${won(r.amount)}</span></div>
+   <div style="display:flex;gap:6px;flex-wrap:wrap"><button class="soft-btn" onclick="editRecurring(${r.id})">수정</button><button class="soft-btn" onclick="stopRecurring(${r.id})">자동등록 중지</button></div>
+ </div>`).join("")}</div>`;
+}
+window.stopRecurring=function(id){
+ const r=state.recurringExpenses.find(x=>x.id===id);
+ if(!r)return;
+ openConfirm("고정지출 자동등록 중지",`${r.name} · ${won(r.amount)} 자동등록을 중지할까요? 오늘 이후 아직 처리되지 않은 예정내역도 제거됩니다.`,()=>{
+   r.active=false;
+   state.plans.forEach(p=>{if(p.recurringId===id&&p.status==="planned"&&p.date>=todayISO())p.status="cancelled"});
+   saveState();
+   notify(r.team,"고정지출 중지",`${r.name} 매월 자동등록이 중지되었습니다.`);
+   notify("강신나",`${r.team} 고정지출 중지`,`${r.name} 자동등록이 중지되었습니다.`);
+   showToast("고정지출 자동등록이 중지되었습니다.",r.name);renderApp();
+ });
+}
+window.savePlan=function(team){
+ const type=document.getElementById("planType").value,date=document.getElementById("planDate").value,name=document.getElementById("planName").value.trim(),amount=parseMoney(document.getElementById("planAmount").value);
+ const recurring=type==="expense" && document.getElementById("planRecurring")?.checked;
+ if(!date||!name||!amount)return alert("예정일, 내용, 금액을 입력하세요.");
+ if(recurring){
+   const day=Number(date.slice(8,10));
+   const rule={id:Date.now(),team,name,amount,startDate:date,day,active:true};
+   state.recurringExpenses.push(rule);
+   materializeRecurringExpenses();
+   notify(team,"고정지출 등록",`${name} ${won(amount)} · 매월 ${day}일 자동등록`);
+   notify("강신나",`${team} 고정지출 등록`,`${name} ${won(amount)} · 매월 ${day}일`);
+   saveState();
+   showToast("고정지출이 등록되었습니다.",`매월 ${day}일 · ${won(amount)} 자동 신고`);
+ }else{
+   state.plans.push({id:Date.now(),team,type,date,name,amount,status:"planned"});
+   notify(team,"미리 신고 완료",`${dateLabel(date)} ${name} ${type==="expense"?"-":"+"}${won(amount)} 예정`);
+   notify("강신나",`${team} 미리 신고`,`${dateLabel(date)} ${name} ${type==="expense"?"지출":"매출"} ${won(amount)} 예정`);
+   saveState();
+   showToast(type==="expense"?"예상 지출이 신고되었습니다.":"예상 매출이 신고되었습니다.",`${dateLabel(date)} · ${won(amount)}`);
+ }
+ renderApp();
+}
+function renderPlanList(arr){
+ if(!arr.length)return `<div class="empty">예정 내역이 없습니다.</div>`;
+ return `<div class="plan-list">${arr.map(p=>{
+   const canEdit=currentTeam===p.team;
+   const actions=canEdit
+     ? (p.isRecurring
+       ? `<button class="soft-btn" onclick="editRecurring(${p.recurringId})">고정지출 수정</button>`
+       : `<div style="display:flex;gap:6px"><button class="soft-btn" onclick="editPlan(${p.id})">수정</button><button class="soft-btn" onclick="deletePlan(${p.id})">삭제</button></div>`)
+     : `<span class="pill wait">예정</span>`;
+   return `<div class="plan-item" style="--team-color:${TEAM_META[p.team].color}">
+     <div class="plan-date">${dateLabel(p.date)}</div>
+     <div class="plan-main"><strong>${p.team} · ${p.name}${p.isRecurring?`<span class="recurring-mark">고정</span>`:""}</strong><span class="${p.type==="expense"?"money-expense":"money-income"}">${p.type==="expense"?"-":"+"}${won(p.amount)}</span></div>
+     ${actions}
+   </div>`;
+ }).join("")}</div>`;
+}
+function balancePage(team){
+ const b=getWeekBudget(team),info=weekLabelInfo(),cash=teamAccountCash(team),usable=actualUsableBudget(team);return `<div class="page-head"><div><h1>잔액 입력</h1><div class="sub">${info.label} (${info.range})의 남은 예산을 정산합니다. 실제 계좌잔액보다 크게 저장할 수 없습니다.</div></div></div><section class="section"><div class="row"><span>현재 ${team} 계좌잔액</span><strong>${won(cash)}</strong></div><div class="row"><span>현재 장부상 미사용예산</span><strong>${won(b.unused)}</strong></div><div class="row"><span>현재 실제 사용가능예산</span><strong>${won(usable)}</strong></div>${budgetCashGap(team)>0?`<div class="fund-warning">⚠ 미사용예산과 계좌잔액이 다릅니다. 아래 정산값은 최대 ${won(cash)}까지만 입력할 수 있습니다.</div>`:""}<div class="field" style="margin-top:14px"><label>선택 주 남은 예산</label><input id="weekRemain" inputmode="numeric" value="${usable}"></div><div class="form-actions"><button class="primary" onclick="saveWeekRemain('${team}')">${info.label} 정산 완료</button></div></section>`;
+}
+window.saveWeekRemain=function(team){const v=parseMoney(document.getElementById("weekRemain").value),cash=teamAccountCash(team);if(v>cash)return alert(`실제 ${team} 계좌잔액 ${won(cash)}보다 큰 미사용예산은 저장할 수 없습니다.`);getWeekBudget(team).unused=v;syncBudgetMirror();saveState();notify("강신나",`${team} 주말 정산`,`${weekLabelInfo().label} 남은 예산 ${won(v)}으로 정산되었습니다.`);showToast("주간 잔액이 저장되었습니다.",`${weekLabelInfo().label} · ${won(v)}`);renderApp()}
+window.reconcileBudgetToCash=function(team,weekStart=selectedWeekStart){const b=getWeekBudget(team,weekStart),before=Math.max(0,Number(b.unused)||0),cash=teamAccountCash(team),after=Math.min(before,cash);if(after===before)return showToast("예산과 계좌잔액이 이미 맞습니다.",`${team} · ${won(after)}`);openConfirm("미사용예산 맞추기",`${weekLabelInfo(weekStart).label} 장부상 미사용예산 ${won(before)}을 현재 ${team} 계좌잔액 기준 ${won(after)}으로 낮출까요? 승인예산 기록은 유지됩니다.`,()=>{b.unused=after;syncBudgetMirror();notify("강신나",`${team} 예산잔액 조정`,`${weekLabelInfo(weekStart).label} 미사용예산 ${won(before)} → ${won(after)} · 실제 계좌잔액 기준`);notify(team,"미사용예산 조정",`${weekLabelInfo(weekStart).label} 미사용예산이 실제 계좌잔액 기준 ${won(after)}으로 조정되었습니다.`);saveState();showToast("미사용예산을 실제 잔액에 맞췄습니다.",`${won(before)} → ${won(after)}`);renderApp()},"맞추기")}
+
+
+
+window.openConfirm=function(title,message,onYes,confirmLabel="삭제"){
+ document.getElementById("modalRoot").innerHTML=`<div class="modal-back"><div class="modal">
+   <h3>${title}</h3>
+   <p>${message}</p>
+   <div class="form-actions">
+     <button class="ghost" id="confirmNo">취소</button>
+     <button class="primary" id="confirmYes">${confirmLabel}</button>
+   </div>
+ </div></div>`;
+ document.getElementById("confirmNo").onclick=()=>closeModal();
+ document.getElementById("confirmYes").onclick=()=>{
+   closeModal();
+   onYes();
+ };
+}
+
+window.editSale=function(id){
+ const s=state.sales.find(x=>x.id===id);if(!s)return;
+ document.getElementById("modalRoot").innerHTML=`<div class="modal-back"><div class="modal">
+ <h3>매출 수정</h3><p>입금완료 금액이나 입금계좌를 바꾸면 기존 계좌 반영분을 되돌린 뒤 새 내용으로 다시 반영합니다.</p>
+ <div class="form-grid">
+  <div class="field"><label>거래명</label><input id="esName" value="${s.name}"></div>
+  <div class="field"><label>금액</label><input id="esAmount" inputmode="numeric" value="${s.amount}"></div>
+  <div class="field"><label>상태</label><select id="esStatus"><option ${s.status==="주문"?"selected":""}>주문</option><option ${s.status==="대기"?"selected":""}>대기</option><option ${s.status==="입금완료"?"selected":""}>입금완료</option></select></div>
+  <div class="field"><label>날짜</label><input id="esDate" type="date" value="${s.date}"></div>
+  <div class="field"><label>입금계좌</label><select id="esAccount">${[s.team,"강신나"].filter((v,i,a)=>a.indexOf(v)===i).map(a=>`<option ${a===s.account?"selected":""}>${a}</option>`).join("")}</select></div>
+ </div>
+ <div class="form-actions"><button class="ghost" onclick="closeModal()">취소</button><button class="primary" onclick="saveSaleEdit(${id})">수정 저장</button></div>
+ </div></div>`;
+}
+window.saveSaleEdit=function(id){
+ const s=state.sales.find(x=>x.id===id);if(!s)return;
+ const name=document.getElementById("esName").value.trim(),amount=parseMoney(document.getElementById("esAmount").value),status=document.getElementById("esStatus").value,date=document.getElementById("esDate").value,account=document.getElementById("esAccount").value;
+ if(!name||!amount||!date)return alert("거래명, 금액, 날짜를 입력하세요.");
+ if(s.status==="입금완료")state.accounts[s.account]-=s.amount;
+ Object.assign(s,{name,amount,status,date,account,receivedAt:status==="입금완료"?date:null});
+ if(status==="입금완료")state.accounts[account]+=amount;
+ notify(s.team,"매출 수정",`${name} ${won(amount)} · ${status}`);
+ notify("강신나",`${s.team} 매출 수정`,`${name} ${won(amount)} · ${status}`);
+ saveState();closeModal();showToast("매출 내역이 수정되었습니다.",`${name} · ${won(amount)}`);renderApp();
+}
+window.deleteSale=function(id){
+ const s=state.sales.find(x=>x.id===id);if(!s)return;
+ openConfirm("매출 내역 삭제",`${s.name} · ${won(s.amount)} 매출을 삭제할까요?${s.status==="입금완료"?" 계좌에 반영된 금액도 함께 되돌립니다.":""}`,()=>{
+   if(s.status==="입금완료")state.accounts[s.account]-=s.amount;
+   state.sales=state.sales.filter(x=>x.id!==id);
+   notify(s.team,"매출 삭제",`${s.name} ${won(s.amount)} 내역이 삭제되었습니다.`);
+   notify("강신나",`${s.team} 매출 삭제`,`${s.name} ${won(s.amount)} 내역 삭제`);
+   saveState();showToast("매출 내역이 삭제되었습니다.",`${s.name} · ${won(s.amount)}`);renderApp();
+ });
+}
+
+window.editExpense=function(id){
+ const e=state.expenses.find(x=>x.id===id);if(!e)return;
+ const isCentral=e.team==="강신나";
+ document.getElementById("modalRoot").innerHTML=`<div class="modal-back"><div class="modal">
+ <h3>지출 수정</h3><p>기존 계좌 차감분을 취소한 뒤 수정된 금액으로 다시 반영합니다.${isCentral?" 강신나 자체 지출은 팀 예산과 무관합니다.":" 예산 차감분도 함께 재계산됩니다."}</p>
+ <div class="form-grid">
+  <div class="field"><label>지출명</label><input id="eeName" value="${safeText(e.name)}"></div>
+  <div class="field"><label>부가세 포함 총액</label><input id="eeAmount" inputmode="numeric" value="${e.amount}"></div>
+  <div class="field"><label>지출일</label><input id="eeDate" type="date" value="${e.date}"></div>
+  <div class="field"><label>출금계좌</label>${isCentral?`<input value="강신나" disabled><input id="eeAccount" type="hidden" value="강신나">`:`<select id="eeAccount">${[e.team,"강신나"].filter((v,i,a)=>a.indexOf(v)===i).map(a=>`<option ${a===e.account?"selected":""}>${a}</option>`).join("")}</select>`}</div>
+  ${isCentral?`<input id="eeBudget" type="hidden" value="no">`:`<div class="field"><label>예산에서 차감</label><select id="eeBudget"><option value="yes" ${e.cutBudget?"selected":""}>예 · 미사용 예산도 차감</option><option value="no" ${!e.cutBudget?"selected":""}>아니오 · 계좌만 차감</option></select></div>`}
+  <div class="field"><label>누구를 위한 지출인가요?</label><select id="eeFor">${["강신나","허슬","엘리븐","로아미","공통"].map(t=>`<option value="${t}" ${t===(e.expenseFor||e.team)?"selected":""}>${t==="공통"?"여러 팀 공통":t===(e.team||"")?`${t} 자체`: `${t}를 위한 결제`}</option>`).join("")}</select></div>
+ </div>
+ <div class="form-actions"><button class="ghost" onclick="closeModal()">취소</button><button class="primary" onclick="saveExpenseEdit(${id})">수정 저장</button></div>
+ </div></div>`;
+}
+window.saveExpenseEdit=function(id){
+ const e=state.expenses.find(x=>x.id===id);if(!e)return;
+ const isCentral=e.team==="강신나";
+ const name=document.getElementById("eeName").value.trim(),amount=parseMoney(document.getElementById("eeAmount").value),date=document.getElementById("eeDate").value,account=isCentral?"강신나":document.getElementById("eeAccount").value,cut=!isCentral&&document.getElementById("eeBudget").value==="yes",expenseFor=document.getElementById("eeFor")?.value||e.team;if(!name||!amount||!date)return alert("지출명, 금액, 날짜를 입력하세요.");
+ state.accounts[e.account]+=e.amount;let oldWeekBudget=null;if(e.cutBudget){oldWeekBudget=getWeekBudget(e.team,e.budgetWeek||weekStartISO(e.date));oldWeekBudget.unused+=Number(e.budgetDeducted||0)}
+ if(state.accounts[account]<amount&&!confirm("수정 후 계좌잔액보다 큰 지출입니다. 그래도 저장할까요?")){state.accounts[e.account]-=e.amount;if(e.cutBudget&&oldWeekBudget)oldWeekBudget.unused=Math.max(0,oldWeekBudget.unused-Number(e.budgetDeducted||0));return;}
+ const vat=Math.round(amount/11),supply=amount-vat,newBudgetWeek=weekStartISO(date),newWeekBudget=cut?getWeekBudget(e.team,newBudgetWeek):null,budgetDeducted=cut?Math.min(newWeekBudget.unused,amount):0;state.accounts[account]-=amount;if(cut)newWeekBudget.unused=Math.max(0,newWeekBudget.unused-budgetDeducted);Object.assign(e,{name,amount,date,account,expenseFor,vatIncluded:true,vat,supply,cutBudget:cut,budgetDeducted,budgetWeek:newBudgetWeek});syncBudgetMirror();
+ if(isCentral)notify("강신나","강신나 지출 수정",`${name} -${won(amount)} · 사용 대상 ${expenseFor} · 강신나 계좌`);else{notify(e.team,"지출 수정",`${name} -${won(amount)} · 사용 대상 ${expenseFor} · ${account} 계좌`);notify("강신나",`${e.team} 지출 수정`,`${name} -${won(amount)} · 사용 대상 ${expenseFor} · ${account} 계좌`)}
+ saveState();closeModal();showToast("지출 내역이 수정되었습니다.",`${name} · ${won(amount)}`);renderApp();
+}
+window.deleteExpense=function(id){
+ const e=state.expenses.find(x=>x.id===id);if(!e)return;openConfirm("지출 내역 삭제",`${e.name} · ${won(e.amount)} 지출을 삭제할까요? 계좌 차감분${e.cutBudget?"과 예산 차감분":""}도 함께 되돌립니다.`,()=>{state.accounts[e.account]+=e.amount;if(e.cutBudget){const bw=getWeekBudget(e.team,e.budgetWeek||weekStartISO(e.date));bw.unused+=Number(e.budgetDeducted||0)}syncBudgetMirror();state.expenses=state.expenses.filter(x=>x.id!==id);if(e.team==="강신나")notify("강신나","강신나 지출 삭제",`${e.name} ${won(e.amount)} 내역이 삭제되고 계좌 금액이 복구되었습니다.`);else{notify(e.team,"지출 삭제",`${e.name} ${won(e.amount)} 내역이 삭제되고 반영 금액이 복구되었습니다.`);notify("강신나",`${e.team} 지출 삭제`,`${e.name} ${won(e.amount)} 내역 삭제`)}saveState();showToast("지출 내역이 삭제되었습니다.",`${e.name} · ${won(e.amount)} 반영 복구`);renderApp();});
+}
+
+window.editPlan=function(id){
+ const p=state.plans.find(x=>x.id===id&&x.status==="planned");if(!p)return;
+ if(p.isRecurring)return editRecurring(p.recurringId);
+ document.getElementById("modalRoot").innerHTML=`<div class="modal-back"><div class="modal">
+ <h3>미리 신고 수정</h3><p>예정 내역은 실제 잔액에 아직 반영되지 않으므로 날짜·구분·금액을 바로 수정할 수 있습니다.</p>
+ <div class="form-grid">
+  <div class="field"><label>구분</label><select id="epType"><option value="expense" ${p.type==="expense"?"selected":""}>예상 지출</option><option value="income" ${p.type==="income"?"selected":""}>예상 매출·입금</option></select></div>
+  <div class="field"><label>예정일</label><input id="epDate" type="date" value="${p.date}"></div>
+  <div class="field"><label>내용</label><input id="epName" value="${p.name}"></div>
+  <div class="field"><label>금액</label><input id="epAmount" inputmode="numeric" value="${p.amount}"></div>
+ </div>
+ <div class="form-actions"><button class="ghost" onclick="closeModal()">취소</button><button class="primary" onclick="savePlanEdit(${id})">수정 저장</button></div>
+ </div></div>`;
+}
+window.savePlanEdit=function(id){
+ const p=state.plans.find(x=>x.id===id);if(!p)return;
+ const type=document.getElementById("epType").value,date=document.getElementById("epDate").value,name=document.getElementById("epName").value.trim(),amount=parseMoney(document.getElementById("epAmount").value);
+ if(!date||!name||!amount)return alert("예정일, 내용, 금액을 입력하세요.");
+ Object.assign(p,{type,date,name,amount});
+ notify(p.team,"미리 신고 수정",`${dateLabel(date)} ${name} ${type==="expense"?"-":"+"}${won(amount)}`);
+ notify("강신나",`${p.team} 미리 신고 수정`,`${dateLabel(date)} ${name} ${won(amount)}`);
+ saveState();closeModal();showToast("미리 신고가 수정되었습니다.",`${name} · ${won(amount)}`);renderApp();
+}
+window.deletePlan=function(id){
+ const p=state.plans.find(x=>x.id===id);if(!p)return;
+ openConfirm("예정 내역 삭제",`${p.name} · ${won(p.amount)} 예정 내역을 삭제할까요?`,()=>{
+   state.plans=state.plans.filter(x=>x.id!==id);
+   notify(p.team,"미리 신고 삭제",`${p.name} ${won(p.amount)} 예정 내역이 삭제되었습니다.`);
+   notify("강신나",`${p.team} 미리 신고 삭제`,`${p.name} ${won(p.amount)} 예정 내역 삭제`);
+   saveState();showToast("미리 신고가 삭제되었습니다.",`${p.name} · ${won(p.amount)}`);renderApp();
+ });
+}
+
+window.editRecurring=function(id){
+ const r=state.recurringExpenses.find(x=>x.id===id);if(!r)return;
+ document.getElementById("modalRoot").innerHTML=`<div class="modal-back"><div class="modal">
+ <h3>고정지출 수정</h3><p>수정하면 오늘 이후의 미처리 자동 예정지출을 새 조건으로 다시 생성합니다.</p>
+ <div class="form-grid">
+  <div class="field"><label>항목명</label><input id="erName" value="${r.name}"></div>
+  <div class="field"><label>금액</label><input id="erAmount" inputmode="numeric" value="${r.amount}"></div>
+  <div class="field"><label>시작일</label><input id="erStart" type="date" value="${r.startDate}"></div>
+  <div class="field"><label>매월 지급일</label><input id="erDay" type="number" min="1" max="31" value="${r.day}"></div>
+ </div>
+ <div class="form-actions"><button class="ghost" onclick="closeModal()">취소</button><button class="primary" onclick="saveRecurringEdit(${id})">수정 저장</button></div>
+ </div></div>`;
+}
+window.saveRecurringEdit=function(id){
+ const r=state.recurringExpenses.find(x=>x.id===id);if(!r)return;
+ const name=document.getElementById("erName").value.trim(),amount=parseMoney(document.getElementById("erAmount").value),startDate=document.getElementById("erStart").value,day=Math.max(1,Math.min(31,Number(document.getElementById("erDay").value)||1));
+ if(!name||!amount||!startDate)return alert("항목명, 금액, 시작일을 입력하세요.");
+ state.plans=state.plans.filter(p=>!(p.recurringId===id&&p.status==="planned"&&p.date>=todayISO()));
+ Object.assign(r,{name,amount,startDate,day,active:true});
+ materializeRecurringExpenses();
+ notify(r.team,"고정지출 수정",`${name} ${won(amount)} · 매월 ${day}일`);
+ notify("강신나",`${r.team} 고정지출 수정`,`${name} ${won(amount)} · 매월 ${day}일`);
+ saveState();closeModal();showToast("고정지출이 수정되었습니다.",`${name} · 매월 ${day}일`);renderApp();
+}
+
+function monthEndISO(dateStr=todayISO()){
+ const d=new Date(dateStr.slice(0,7)+"-01T00:00:00");d.setMonth(d.getMonth()+1);d.setDate(0);return iso(d);
+}
+function ledgerRangeDates(){
+ if(ledgerRangeMode==="week")return {start:selectedWeekStart,end:weekEndISO(selectedWeekStart),label:`${weekLabelInfo(selectedWeekStart).label} · ${weekLabelInfo(selectedWeekStart).range}`};
+ if(ledgerRangeMode==="custom")return {start:ledgerCustomStart||todayISO(),end:ledgerCustomEnd||todayISO(),label:`${ledgerCustomStart||"-"} ~ ${ledgerCustomEnd||"-"}`};
+ const start=todayISO().slice(0,8)+"01",end=monthEndISO(todayISO());return {start,end,label:`${Number(todayISO().slice(5,7))}월 전체`};
+}
+function ledgerFilterControls(){
+ const r=ledgerRangeDates();
+ return `<section class="section"><div class="history-filter"><div class="history-filter-row"><div><div class="history-filter-label">조회 기간</div><div class="filter-group" style="margin-top:6px"><button class="filter-btn ${ledgerRangeMode==="week"?"active":""}" onclick="setLedgerRange('week')">선택 주</button><button class="filter-btn ${ledgerRangeMode==="month"?"active":""}" onclick="setLedgerRange('month')">이번 달</button><button class="filter-btn ${ledgerRangeMode==="custom"?"active":""}" onclick="setLedgerRange('custom')">기간 선택</button></div></div><div><div class="history-filter-label">내역 구분</div><div class="filter-group" style="margin-top:6px"><button class="filter-btn ${ledgerTypeFilter==="all"?"active":""}" onclick="setLedgerType('all')">전체</button><button class="filter-btn ${ledgerTypeFilter==="sale"?"active":""}" onclick="setLedgerType('sale')">매출</button><button class="filter-btn ${ledgerTypeFilter==="expense"?"active":""}" onclick="setLedgerType('expense')">지출</button></div></div></div>${ledgerRangeMode==="custom"?`<div class="history-filter-row"><div class="history-date-range"><div class="field"><label>시작일</label><input type="date" value="${ledgerCustomStart}" onchange="setLedgerCustom('start',this.value)"></div><div class="field"><label>종료일</label><input type="date" value="${ledgerCustomEnd}" onchange="setLedgerCustom('end',this.value)"></div></div></div>`:""}<div class="history-result-line">현재 조회: <b>${r.label}</b> · ${ledgerTypeFilter==="sale"?"매출만":ledgerTypeFilter==="expense"?"지출만":"매출 + 지출"}</div></div></section>`;
+}
+window.setLedgerRange=function(mode){ledgerRangeMode=mode;if(mode==="custom"&&(!ledgerCustomStart||!ledgerCustomEnd)){ledgerCustomStart=todayISO().slice(0,8)+"01";ledgerCustomEnd=todayISO()}renderApp()}
+window.setLedgerType=function(type){ledgerTypeFilter=type;renderApp()}
+window.setLedgerCustom=function(which,value){if(!value)return;if(which==="start")ledgerCustomStart=value;else ledgerCustomEnd=value;if(ledgerCustomStart>ledgerCustomEnd){if(which==="start")ledgerCustomEnd=value;else ledgerCustomStart=value}ledgerRangeMode="custom";renderApp()}
+function filterLedgerItems(items){const r=ledgerRangeDates();return items.filter(x=>x.date>=r.start&&x.date<=r.end&&(ledgerTypeFilter==="all"||x.kind===ledgerTypeFilter)).sort((a,b)=>b.date.localeCompare(a.date)||b.id-a.id)}
+function ledgerSummary(items){
+ const completedSales=items.filter(x=>x.kind==="sale"&&x.status==="입금완료").reduce((a,x)=>a+(Number(x.amount)||0),0),expenses=items.filter(x=>x.kind==="expense").reduce((a,x)=>a+(Number(x.amount)||0),0),net=completedSales-expenses;
+ return `<div class="cards">${stat("조회기간 입금완료 매출",won(completedSales),"실제 입금완료 기준")}${stat("조회기간 지출",won(expenses),"등록된 실제 지출")}${stat("매출 - 지출",`${net<0?"-":""}${won(Math.abs(net))}`,`${items.length}건 조회`)}</div>`;
+}
+
+function historyPage(team){
+ const allItems=[
+  ...state.sales.filter(x=>x.team===team).map(x=>({id:x.id,kind:"sale",date:x.receivedAt||x.date,type:"매출",name:x.name,amount:x.amount,sign:"+",cls:"money-income",status:x.status,expenseFor:"-"})),
+  ...state.expenses.filter(x=>x.team===team).map(x=>({id:x.id,kind:"expense",date:x.date,type:"지출",name:x.name,amount:x.amount,sign:"-",cls:"money-expense",status:"완료",expenseFor:x.expenseFor||x.team}))
+ ];
+ const items=filterLedgerItems(allItems),r=ledgerRangeDates();
+ return `<div class="page-head"><div><h1>내역 보기</h1><div class="sub">기간과 매출·지출 구분을 선택해서 ${team} 내역을 확인합니다.</div></div></div>${ledgerFilterControls()}${ledgerSummary(items)}
+ <section class="section"><div class="section-title"><h2>조회 내역</h2><div class="hint">${r.start} ~ ${r.end} · ${items.length}건</div></div>${items.length?`<table><thead><tr><th>날짜</th><th>구분</th><th>내용</th><th>사용 대상</th><th>상태</th><th>금액</th><th>관리</th></tr></thead><tbody>
+ ${items.map(x=>`<tr><td>${x.date}</td><td><span class="pill ${x.kind==="sale"?"ok":"danger"}">${x.type}</span></td><td>${x.name}</td><td>${x.kind==="expense"?`<b>${safeText(x.expenseFor||team)}</b>`:"-"}</td><td>${x.status}</td><td class="${x.cls}">${x.sign}${won(x.amount)}</td><td><div style="display:flex;gap:6px"><button class="soft-btn" onclick="${x.kind==="sale"?`editSale(${x.id})`:`editExpense(${x.id})`}">수정</button><button class="soft-btn" onclick="${x.kind==="sale"?`deleteSale(${x.id})`:`deleteExpense(${x.id})`}">삭제</button></div></td></tr>`).join("")}
+ </tbody></table>`:`<div class="empty">선택한 기간과 구분에 해당하는 내역이 없습니다.</div>`}</section>`;
+}
+
+function centralHome(){
+ const info=weekLabelInfo(),weeklyPlanExpense=state.plans.filter(p=>p.status==="planned"&&p.type==="expense"&&p.date>=selectedWeekStart&&p.date<=weekEndISO(selectedWeekStart)).reduce((a,b)=>a+b.amount,0),requests=state.budgetRequests.filter(r=>r.weekStart===selectedWeekStart).sort((a,b)=>(b.createdAt||"").localeCompare(a.createdAt||"")),pending=requests.filter(r=>r.status==="요청"),pendingTotal=pending.reduce((a,r)=>a+r.requestedAmount,0),centralBalance=Number(state.accounts["강신나"])||0;
+ return `<div class="page-head"><div><h1>전체 현황</h1><div class="sub">강신나 본계좌에서 각 팀 예산을 실제 지급하고 전체 자금 흐름을 관리합니다.</div></div><div class="week-chip">${info.label} · ${info.range}</div></div>
+ <div class="cards">
+ ${stat("강신나 지급가능자금",won(centralBalance),"강신나 본계좌 잔액 · 팀 예산 지급 원천")}
+ ${stat("통합 보유현금",won(totalCash()),"강신나 + 3개 팀 계좌 합계")}
+ ${stat("선택 주 예산 요청",won(pendingTotal),`${pending.length}건 승인 대기`)}
+ ${stat("이번 달 전체 실매출",won(monthSales()),"입금완료 기준")}
+ ${stat("이번 달 실제 지출",won(monthExpenses()),"등록된 지출 합계")}
+ ${stat("선택 주 예정 지출",won(weeklyPlanExpense),"미리 신고 기준")}
+ ${stat("현재 총 부채",won(totalDebt()),"등록된 대출 원금 잔액")}
+ </div>
+ <section class="section"><div class="section-title"><h2>강신나 빠른 실행</h2><div class="hint">본계좌에서 직접 나가는 지출</div></div><div class="quick-grid"><button class="quick" onclick="go('지출 등록')"><strong>강신나 지출 등록</strong><span>강신나 본계좌에서 직접 사용한 비용을 등록</span></button></div></section>
+ <section class="section"><div class="section-title"><h2>${info.label} 예산 요청</h2><div class="hint">수락 = 강신나 본계좌 출금 + 팀 계좌 입금 + 이 주 사용가능예산 반영</div></div>
+ ${requests.length?`<div class="request-grid">${requests.map(r=>{const amount=Number(r.requestedAmount)||0,canFund=centralBalance>=amount;return `<div class="request-card" style="--team-color:${TEAM_META[r.team].color}"><h3 style="color:${TEAM_META[r.team].color}">${r.team}</h3><span class="week-chip">${r.requestType==="추가"?"추가예산":"주간예산"} · ${r.status}</span><div class="request-amount">${r.requestType==="추가"?"+":""}${won(amount)}</div>${r.requestType==="추가"?`<div class="row"><span>요청 구분</span><strong>추가 예산</strong></div>`:`<div class="row"><span>목표예산</span><strong>${won(r.targetAmount)}</strong></div><div class="row"><span>전주 이월</span><strong>${won(r.carryover||0)}</strong></div>`}<div class="row"><span>현재 ${r.team} 계좌</span><strong>${won(state.accounts[r.team]||0)}</strong></div><div class="row"><span>메모</span><strong>${r.memo||"-"}</strong></div>${r.status==="요청"?`<div class="row"><span>지급 후 강신나 잔액</span><strong class="${canFund?"":"money-expense"}">${canFund?won(centralBalance-amount):"잔액 부족"}</strong></div>${!canFund?`<div class="fund-warning">강신나 본계좌에 ${won(amount-centralBalance)}이 부족합니다.</div>`:""}<div class="request-actions"><button class="approve-btn" ${canFund?"":"disabled"} onclick="approveBudgetRequest(${r.id})">${canFund?"수락·지급":"잔액 부족"}</button><button class="reject-btn" onclick="rejectBudgetRequest(${r.id})">거절</button></div>`:`<div class="success-note" style="margin-top:10px">${r.status==="승인"?`지급완료 · ${won(r.approvedAmount||r.requestedAmount)}`:"거절됨"}</div>`}</div>`}).join("")}</div>`:`<div class="empty">이 주에 들어온 예산 요청이 없습니다.</div>`}</section>
+ <section class="section"><div class="section-title"><h2>팀별 핵심 현황</h2><div class="legend"><span><i style="background:var(--hustle)"></i>허슬</span><span><i style="background:var(--eleven)"></i>엘리븐</span><span><i style="background:var(--loami)"></i>로아미</span></div></div><table><thead><tr><th>팀</th><th>계좌잔액</th><th>이번 달 실매출</th><th>이번 달 지출</th><th>선택 주 승인예산</th><th>장부 미사용</th><th>실제 사용가능</th></tr></thead><tbody>${["허슬","엘리븐","로아미"].map(t=>{const b=getWeekBudget(t),usable=actualUsableBudget(t),gap=budgetCashGap(t);return `<tr><td><b style="color:${TEAM_META[t].color}">${t}</b></td><td><strong>${won(state.accounts[t])}</strong></td><td class="money-income">${won(monthSales(t))}</td><td class="money-expense">${won(monthExpenses(t))}</td><td>${won(b.approved)}</td><td>${won(b.unused)}${gap>0?`<span class="budget-gap">⚠ ${won(gap)} 차이</span>`:""}</td><td><strong>${won(usable)}</strong></td></tr>`}).join("")}</tbody></table></section>${renderCalendarSection()}`;
+}
+window.approveBudgetRequest=function(id){
+ const r=state.budgetRequests.find(x=>x.id===id);if(!r||r.status!=="요청")return;
+ const amount=Number(r.requestedAmount)||0;
+ const central=Number(state.accounts["강신나"])||0;
+ if(amount<=0)return alert("지급할 예산 금액이 없습니다.");
+ if(central<amount)return alert(`강신나 본계좌 잔액이 부족합니다.\n현재 ${won(central)} / 필요 ${won(amount)}`);
+ const b=getWeekBudget(r.team,r.weekStart);
+ state.accounts["강신나"]-=amount;
+ state.accounts[r.team]=(Number(state.accounts[r.team])||0)+amount;
+ b.approved+=amount;b.unused+=amount;if(r.requestType==="추가")b.extra=(Number(b.extra)||0)+amount;
+ r.status="승인";r.approvedAmount=amount;r.approvedAt=new Date().toISOString();r.fundedFrom="강신나";r.centralBalanceAfter=state.accounts["강신나"];
+ state.transfers=state.transfers||[];
+ state.transfers.push({id:Date.now(),date:todayISO(),from:"강신나",to:r.team,amount,memo:`${weekLabelInfo(r.weekStart).label} 예산 지급`,type:"예산지급",budgetRequestId:r.id,weekStart:r.weekStart});
+ syncBudgetMirror();
+ notify(r.team,r.requestType==="추가"?"추가 예산 입금":"예산 입금",`${weekLabelInfo(r.weekStart).label} ${r.requestType==="추가"?"추가예산 ":"예산 "}${won(amount)}이 ${r.team} 계좌와 사용가능예산에 반영되었습니다.`);
+ notify("강신나",`${r.team} ${r.requestType==="추가"?"추가 ":""}예산 지급 완료`,`${won(amount)} 지급 · 강신나 잔액 ${won(state.accounts["강신나"])}`);
+ saveState();showToast("예산이 승인·지급되었습니다.",`${r.team} · ${won(amount)} 지급 완료`);renderApp();
+}
+window.rejectBudgetRequest=function(id){const r=state.budgetRequests.find(x=>x.id===id);if(!r||r.status!=="요청")return;r.status="거절";r.rejectedAt=new Date().toISOString();notify(r.team,"예산 요청 거절",`${weekLabelInfo(r.weekStart).label} 예산 요청이 거절되었습니다.`);saveState();showToast("예산 요청을 거절했습니다.",`${r.team} · ${weekLabelInfo(r.weekStart).label}`);renderApp()}
+
+
+function safeText(v){return String(v??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\"/g,"&quot;").replace(/'/g,"&#39;")}
+function calendarNoteData(date){
+ const v=(state.calendarNotes||{})[date];
+ if(typeof v==="string")return {type:"메모",text:v};
+ if(v&&typeof v==="object")return {type:"메모",text:String(v.text||v.memo||"")};
+ return {type:"메모",text:""};
+}
+function calendarMemo(date){return calendarNoteData(date).text}
+function calendarSchedulesForDate(date){
+ return (state.calendarSchedules||[]).filter(it=>it.startDate<=date&&it.endDate>=date).sort((a,b)=>a.startDate.localeCompare(b.startDate)||a.endDate.localeCompare(b.endDate)||String(a.text).localeCompare(String(b.text)));
+}
+function expectedBalancesAt(date){
+ const teams=["강신나","허슬","엘리븐","로아미"],today=todayISO(),b={};
+ teams.forEach(t=>b[t]=Number(state.accounts[t])||0);
+ if(date>=today){
+   (state.plans||[]).filter(p=>p.status==="planned"&&p.date>=today&&p.date<=date).forEach(p=>{
+     if(!(p.team in b))return;
+     const a=Number(p.amount)||0;
+     b[p.team]+=p.type==="expense"?-a:a;
+   });
+ }else{
+   (state.sales||[]).filter(x=>x.status==="입금완료"&&(x.receivedAt||x.date)>date).forEach(x=>{if(x.account in b)b[x.account]-=Number(x.amount)||0});
+   (state.expenses||[]).filter(x=>x.date>date).forEach(x=>{if(x.account in b)b[x.account]+=Number(x.amount)||0});
+   (state.transfers||[]).filter(x=>x.date>date).forEach(x=>{const a=Number(x.amount)||0;if(x.from in b)b[x.from]+=a;if(x.to in b)b[x.to]-=a});
+ }
+ b["통합"]=teams.reduce((sum,t)=>sum+b[t],0);
+ return b;
+}
+window.selectCalendarDay=function(date){
+ if(Date.now()<calendarSuppressClickUntil)return;
+ selectedCalendarDate=date;
+ renderApp();
+}
+window.calendarDayClick=function(date){
+ if(Date.now()<calendarSuppressClickUntil)return;
+ clearTimeout(calendarClickTimer);
+ calendarClickTimer=setTimeout(()=>{calendarClickTimer=null;selectCalendarDay(date)},220);
+}
+window.calendarDayDoubleClick=function(date){
+ clearTimeout(calendarClickTimer);calendarClickTimer=null;
+ selectedCalendarDate=date;
+ openCalendarDay(date);
+}
+window.toggleCalendarEntryFields=function(){
+ const type=document.getElementById("calendarEntryType")?.value||"메모";
+ const memoDate=document.getElementById("calendarMemoDateField"),scheduleDates=document.getElementById("calendarScheduleDateFields");
+ if(memoDate)memoDate.classList.toggle("hidden",type!=="메모");
+ if(scheduleDates)scheduleDates.classList.toggle("hidden",type!=="일정");
+}
+window.openCalendarDay=function(date,editScheduleId=null){
+ selectedCalendarDate=date;
+ const note=calendarNoteData(date),events=getCalendarEventsForDate(date),schedules=calendarSchedulesForDate(date);
+ const editing=editScheduleId!==null?(state.calendarSchedules||[]).find(x=>String(x.id)===String(editScheduleId)):null;
+ const initialType=editing?"일정":"메모";
+ const initialText=editing?editing.text:note.text;
+ const startDate=editing?editing.startDate:date,endDate=editing?editing.endDate:date;
+ const eventHtml=events.length?events.map(e=>`<div class="row"><span>${safeText(e.name||"")} · ${safeText(e.team||"")}</span><strong class="${e.type==="expense"?"money-expense":"money-income"}">${e.type==="expense"?"-":"+"}${won(e.amount||0)}</strong></div>`).join(""):`<div class="empty">등록된 매출·지출·예정 내역이 없습니다.</div>`;
+ const scheduleHtml=schedules.length?schedules.map(it=>`<div class="schedule-item"><div class="schedule-copy"><strong>${safeText(it.text)}</strong><span>${it.startDate===it.endDate?dateLabel(it.startDate):`${dateLabel(it.startDate)} ~ ${dateLabel(it.endDate)}`}</span></div><div class="schedule-actions"><button class="ghost" onclick="openCalendarDay('${date}','${safeText(String(it.id))}')">수정</button><button class="ghost" onclick="deleteCalendarSchedule('${safeText(String(it.id))}','${date}')">삭제</button></div></div>`).join(""):`<div class="empty">이 날짜에 걸쳐 있는 일정이 없습니다.</div>`;
+ document.getElementById("modalRoot").innerHTML=`<div class="modal-back"><div class="modal"><h3>${dateLabel(date)} 메모·일정 등록</h3><p>메모는 하루만 표시되고, 일정은 시작일~종료일 기간 전체에 표시됩니다. 계좌잔고 계산에는 영향을 주지 않습니다.</p><div class="form-grid"><div class="field"><label>구분</label><select id="calendarEntryType" onchange="toggleCalendarEntryFields()"><option value="메모" ${initialType==="메모"?"selected":""}>메모</option><option value="일정" ${initialType==="일정"?"selected":""}>일정</option></select></div><div class="field ${initialType==="메모"?"":"hidden"}" id="calendarMemoDateField"><label>날짜</label><input value="${date}" disabled></div></div><div class="form-grid ${initialType==="일정"?"":"hidden"}" id="calendarScheduleDateFields" style="margin-top:10px"><div class="field"><label>시작일</label><input id="calendarScheduleStart" type="date" value="${startDate}"></div><div class="field"><label>종료일</label><input id="calendarScheduleEnd" type="date" value="${endDate}"></div></div><div class="field" style="margin-top:10px"><label>내용</label><textarea id="calendarEntryText" rows="4" placeholder="예: 거래처 미팅, 3일간 촬영, 입금 확인 필요">${safeText(initialText)}</textarea></div><div class="schedule-list"><div class="hint" style="margin-bottom:6px">이 날짜에 걸쳐 있는 일정</div>${scheduleHtml}</div><div style="margin-top:14px"><div class="hint" style="margin-bottom:6px">이날 등록된 자금 일정</div>${eventHtml}</div><div class="form-actions">${!editing&&note.text?`<button class="ghost" onclick="deleteCalendarMemo('${date}')">메모 삭제</button>`:""}<button class="ghost" onclick="closeModal()">취소</button><button class="primary" onclick="saveCalendarEntry('${date}',${editing?`'${safeText(String(editing.id))}'`:"null"})">${editing?"일정 수정":"저장"}</button></div></div></div>`;
+}
+window.saveCalendarEntry=function(date,editScheduleId=null){
+ const type=document.getElementById("calendarEntryType")?.value==="일정"?"일정":"메모";
+ const text=(document.getElementById("calendarEntryText")?.value||"").trim();
+ if(!text)return showToast("내용을 입력해주세요.","메모나 일정 내용을 적어주세요.","error");
+ if(type==="메모"){
+   state.calendarNotes=state.calendarNotes||{};
+   state.calendarNotes[date]={type:"메모",text};
+   if(editScheduleId!==null)state.calendarSchedules=(state.calendarSchedules||[]).filter(x=>String(x.id)!==String(editScheduleId));
+   saveState();closeModal();showToast("메모가 저장되었습니다.",dateLabel(date));renderApp();return;
+ }
+ const startDate=document.getElementById("calendarScheduleStart")?.value||date;
+ const endDate=document.getElementById("calendarScheduleEnd")?.value||date;
+ if(startDate>endDate)return showToast("일정 기간을 확인해주세요.","종료일은 시작일보다 빠를 수 없습니다.","error");
+ state.calendarSchedules=state.calendarSchedules||[];
+ if(editScheduleId!==null){
+   const it=state.calendarSchedules.find(x=>String(x.id)===String(editScheduleId));
+   if(it){it.startDate=startDate;it.endDate=endDate;it.text=text;it.updatedAt=new Date().toISOString();}
+ }else{
+   state.calendarSchedules.push({id:`schedule-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,startDate,endDate,text,createdAt:new Date().toISOString()});
+ }
+ saveState();closeModal();showToast(editScheduleId!==null?"일정이 수정되었습니다.":"일정이 등록되었습니다.",startDate===endDate?dateLabel(startDate):`${dateLabel(startDate)} ~ ${dateLabel(endDate)}`);renderApp();
+}
+window.deleteCalendarMemo=function(date){
+ state.calendarNotes=state.calendarNotes||{};delete state.calendarNotes[date];saveState();closeModal();showToast("메모가 삭제되었습니다.",dateLabel(date));renderApp();
+}
+window.deleteCalendarSchedule=function(id,returnDate){
+ state.calendarSchedules=(state.calendarSchedules||[]).filter(x=>String(x.id)!==String(id));saveState();showToast("일정이 삭제되었습니다.",dateLabel(returnDate));openCalendarDay(returnDate);
+}
+function bindCalendarLongPress(){
+ document.querySelectorAll(".day[data-calendar-date]").forEach(el=>{
+   let timer=null,startX=0,startY=0;
+   const cancel=()=>{if(timer){clearTimeout(timer);timer=null}};
+   el.addEventListener("touchstart",e=>{
+     if(e.touches.length!==1)return;
+     startX=e.touches[0].clientX;startY=e.touches[0].clientY;
+     cancel();
+     timer=setTimeout(()=>{
+       timer=null;
+       calendarSuppressClickUntil=Date.now()+1000;
+       const date=el.dataset.calendarDate;
+       selectedCalendarDate=date;
+       if(navigator.vibrate)try{navigator.vibrate(20)}catch(_){}
+       openCalendarDay(date);
+     },650);
+   },{passive:true});
+   el.addEventListener("touchmove",e=>{
+     if(!timer||e.touches.length!==1)return;
+     const dx=e.touches[0].clientX-startX,dy=e.touches[0].clientY-startY;
+     if(Math.hypot(dx,dy)>12)cancel();
+   },{passive:true});
+   el.addEventListener("touchend",cancel,{passive:true});
+   el.addEventListener("touchcancel",cancel,{passive:true});
+ });
+}
+function getCalendarEventsForDate(date){
+ const actualSales=state.sales.filter(s=>(s.receivedAt||s.date)===date).map(s=>({date,team:s.team,type:"income",amount:s.amount,name:s.name,planned:false}));
+ const actualExp=state.expenses.filter(e=>e.date===date).map(e=>({date,team:e.team,type:"expense",amount:e.amount,name:e.name,planned:false}));
+ const plans=state.plans.filter(p=>p.status==="planned"&&p.date===date).map(p=>({...p,planned:true}));
+ return [...actualSales,...actualExp,...plans];
+}
+
+function getCalendarEvents(y,m){
+ const prefix=`${y}-${String(m+1).padStart(2,"0")}`;
+ const actualSales=state.sales.filter(s=>(s.receivedAt||s.date)?.startsWith(prefix)).map(s=>({date:s.receivedAt||s.date,team:s.team,type:"income",amount:s.amount,name:s.name,planned:false}));
+ const actualExp=state.expenses.filter(e=>e.date.startsWith(prefix)).map(e=>({date:e.date,team:e.team,type:"expense",amount:e.amount,name:e.name,planned:false}));
+ const plans=state.plans.filter(p=>p.status==="planned"&&p.date.startsWith(prefix)).map(p=>({...p,planned:true}));
+ return [...actualSales,...actualExp,...plans];
+}
+function renderCalendarSection(){
+ const y=calendarCursor.getFullYear(),m=calendarCursor.getMonth(),first=new Date(y,m,1),startDay=first.getDay(),days=new Date(y,m+1,0).getDate(),prevDays=new Date(y,m,0).getDate();
+ const events=getCalendarEvents(y,m);let cells=[];
+ for(let i=0;i<42;i++){
+   let day=i-startDay+1,curMonth=true,dateObj;
+   if(day<1){day=prevDays+day;dateObj=new Date(y,m-1,day);curMonth=false}
+   else if(day>days){day=day-days;dateObj=new Date(y,m+1,day);curMonth=false}
+   else dateObj=new Date(y,m,day);
+   const ds=`${dateObj.getFullYear()}-${String(dateObj.getMonth()+1).padStart(2,"0")}-${String(dateObj.getDate()).padStart(2,"0")}`;
+   const ev=events.filter(e=>e.date===ds),memo=calendarMemo(ds),note=memo?safeText(memo.split(/\n/)[0]):"",schedules=calendarSchedulesForDate(ds);
+   cells.push(`<div class="day ${!curMonth?"muted":""} ${ds===todayISO()?"today":""} ${ds===selectedCalendarDate?"selected-day":""}" data-calendar-date="${ds}" onclick="calendarDayClick('${ds}')" ondblclick="calendarDayDoubleClick('${ds}')" oncontextmenu="return false"><div class="day-num">${day}</div>${ev.map(e=>`<div class="cal-event ${(TEAM_META[e.team]||TEAM_META["강신나"]).class} ${e.planned?"plan":""}" title="${safeText(e.name)}"><span style="color:${e.type==="expense"?"#c62828":"#176b42"}">${e.team} ${e.type==="expense"?"-":"+"}${shortMoney(e.amount)}</span>${e.isRecurring?" 고정":(e.planned?" 예정":"")}</div>`).join("")}${schedules.map(it=>`<div class="cal-schedule" title="${safeText(it.text)} · ${it.startDate}~${it.endDate}">일정 · ${safeText(it.text.split(/\n/)[0])}</div>`).join("")}${memo?`<div class="cal-note" title="${safeText(memo)}">메모 · ${note}</div>`:""}</div>`);
+ }
+ const forecast=expectedBalancesAt(selectedCalendarDate),past=selectedCalendarDate<todayISO();
+ return `<section class="section"><div class="section-title"><div><h2>통합 캘린더</h2><div class="legend" style="margin-top:8px"><span><i style="background:var(--hustle)"></i>허슬</span><span><i style="background:var(--eleven)"></i>엘리븐</span><span><i style="background:var(--loami)"></i>로아미</span></div></div><div class="calendar-tools"><button class="ghost" onclick="moveMonth(-1)">‹</button><div class="calendar-title">${y}년 ${m+1}월</div><button class="ghost" onclick="moveMonth(1)">›</button></div></div><div class="hint" style="margin-bottom:10px">한 번 누르기 = 날짜 선택·예상잔고 확인 · PC 더블클릭 / 휴대폰 길게 누르기 = 메모·기간 일정 등록 · 일정은 시작일~종료일 전체에 표시 · 빨강 = 지출 · 초록 = 매출 · 점선 = 미리 신고 · 고정 = 자동생성</div><div class="calendar-scroll"><div class="calendar">${["일","월","화","수","목","금","토"].map(d=>`<div class="cal-head">${d}</div>`).join("")}${cells.join("")}</div></div><div class="balance-forecast"><div class="forecast-head"><div><h3>${dateLabel(selectedCalendarDate)} 예상 계좌잔고</h3><div class="calendar-click-hint">${past?"과거 날짜는 현재 잔액에서 실제 등록내역을 역산한 참고값입니다.":"현재 실제 잔액에 선택 날짜까지의 미리 신고 예정 매출·지출을 반영한 값입니다."}</div></div><button class="soft-btn" onclick="openCalendarDay('${selectedCalendarDate}')">메모·일정 등록</button></div><div class="forecast-grid">${["강신나","허슬","엘리븐","로아미"].map(t=>`<div class="forecast-card"><div class="name" style="color:${TEAM_META[t].color}">${t}</div><div class="amount">${won(forecast[t])}</div></div>`).join("")}<div class="forecast-card total"><div class="name">통합 예상잔고</div><div class="amount">${won(forecast["통합"])}</div></div></div></div></section>`;
+}
+function calendarPage(){
+ return `<div class="page-head"><div><h1>통합 캘린더</h1><div class="sub">각 팀의 실제 매출·지출과 미리 신고된 예정 내역을 일정처럼 확인합니다.</div></div></div>${renderCalendarSection()}`;
+}
+window.moveMonth=function(n){calendarCursor=new Date(calendarCursor.getFullYear(),calendarCursor.getMonth()+n,1);renderApp()}
+
+function weeklyCentral(){
+ const info=weekLabelInfo(),requests=state.budgetRequests.filter(r=>r.weekStart===selectedWeekStart);return `<div class="page-head"><div><h1>주간예산</h1><div class="sub">${info.label} (${info.range})의 승인예산·장부 미사용·실제 사용가능예산·예정지출·요청상태를 봅니다.</div></div></div><section class="section"><table><thead><tr><th>팀</th><th>승인예산</th><th>장부 미사용</th><th>실제 사용가능</th><th>예정지출</th><th>승인 대기 요청</th></tr></thead><tbody>${["허슬","엘리븐","로아미"].map(t=>{const b=getWeekBudget(t),usable=actualUsableBudget(t),gap=budgetCashGap(t),p=plansForWeek(t,"expense").reduce((a,x)=>a+x.amount,0),pending=requests.filter(r=>r.team===t&&r.status==="요청").reduce((a,r)=>a+r.requestedAmount,0);return `<tr><td><b style="color:${TEAM_META[t].color}">${t}</b></td><td>${won(b.approved)}</td><td>${won(b.unused)}${gap>0?`<span class="budget-gap">⚠ ${won(gap)} 차이</span>`:""}</td><td><strong>${won(usable)}</strong></td><td class="money-expense">${won(p)}</td><td><b>${won(pending)}</b></td></tr>`}).join("")}</tbody></table></section><section class="section"><div class="section-title"><h2>예산 요청 상세</h2><div class="hint">홈에서도 승인 가능</div></div>${requests.length?`<table><thead><tr><th>팀</th><th>구분</th><th>요청액</th><th>기준</th><th>메모</th><th>상태</th><th>관리</th></tr></thead><tbody>${requests.map(r=>`<tr><td><b style="color:${TEAM_META[r.team].color}">${r.team}</b></td><td>${r.requestType==="추가"?"추가예산":"주간예산"}</td><td>${won(r.requestedAmount)}</td><td>${r.requestType==="추가"?"추가 요청":won(r.targetAmount)}</td><td>${r.memo||"-"}</td><td><span class="pill ${r.status==="승인"?"ok":r.status==="거절"?"danger":"wait"}">${r.status}</span></td><td>${r.status==="요청"?`<button class="approve-btn" ${(Number(state.accounts["강신나"])||0)>=(Number(r.requestedAmount)||0)?"":"disabled"} onclick="approveBudgetRequest(${r.id})">${(Number(state.accounts["강신나"])||0)>=(Number(r.requestedAmount)||0)?"수락·지급":"잔액 부족"}</button>`:"-"}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">이 주 예산 요청이 없습니다.</div>`}</section>`;
+}
+function monthlyCentral(){
+ const fixed=(state.fixedCosts||[]).reduce((a,b)=>a+(Number(b.amount)||0),0);
+ const debt=state.debts.filter(d=>d.monthly).reduce((a,b)=>a+b.monthlyPayment,0);
+ const monthPrefix=todayISO().slice(0,7);const teamBudget=Object.entries(state.weeklyBudgets||{}).filter(([w])=>w.startsWith(monthPrefix)).reduce((sum,[,teams])=>sum+Object.values(teams||{}).reduce((a,b)=>a+(Number(b.approved)||0),0),0);
+ return `<div class="page-head"><div><h1>월간예산</h1><div class="sub">팀 운영예산·고정비·대출상환 계획을 합산합니다.</div></div></div>
+ <div class="cards">${stat("팀 운영예산 추정",won(teamBudget))}${stat("고정비",won(fixed))}${stat("대출상환",won(debt))}</div>
+ <section class="section"><div class="section-title"><h2>이번 달 총 필요자금 추정</h2></div><div style="font-size:35px;font-weight:900">${won(teamBudget+fixed+debt)}</div></section>`;
+}
+function centralLedger(){
+ const allItems=[
+  ...state.sales.map(x=>({id:x.id,date:x.receivedAt||x.date,team:x.team,type:"매출",name:x.name,amount:x.amount,cls:"money-income",sign:"+",kind:"sale",status:x.status,expenseFor:"-"})),
+  ...state.expenses.map(x=>({id:x.id,date:x.date,team:x.team,type:"지출",name:x.name,amount:x.amount,cls:"money-expense",sign:"-",kind:"expense",status:"완료",expenseFor:x.expenseFor||x.team}))
+ ];
+ const arr=filterLedgerItems(allItems),r=ledgerRangeDates();
+ return `<div class="page-head"><div><h1>매출·지출</h1><div class="sub">기간과 구분을 선택해서 전체 팀의 실제 등록 내역을 확인합니다.</div></div></div>${ledgerFilterControls()}${ledgerSummary(arr)}<section class="section"><div class="section-title"><h2>조회 내역</h2><div class="hint">${r.start} ~ ${r.end} · ${arr.length}건</div></div>${arr.length?`<table><thead><tr><th>날짜</th><th>결제/등록팀</th><th>구분</th><th>내용</th><th>사용 대상</th><th>상태</th><th>금액</th><th>관리</th></tr></thead><tbody>${arr.map(x=>`<tr><td>${x.date}</td><td><b style="color:${TEAM_META[x.team].color}">${x.team}</b></td><td><span class="pill ${x.kind==="sale"?"ok":"danger"}">${x.type}</span></td><td>${x.name}</td><td>${x.kind==="expense"?`<b>${safeText(x.expenseFor||x.team)}</b>`:"-"}</td><td>${x.status}</td><td class="${x.cls}">${x.sign}${won(x.amount)}</td><td>${x.team==="강신나"&&x.kind==="expense"?`<div style="display:flex;gap:6px"><button class="soft-btn" onclick="editExpense(${x.id})">수정</button><button class="soft-btn" onclick="deleteExpense(${x.id})">삭제</button></div>`:"-"}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">선택한 기간과 구분에 해당하는 내역이 없습니다.</div>`}</section>`;
+}
+
+function accountsPage(){
+ return `<div class="page-head"><div><h1>자금·계좌</h1><div class="sub">강신나 본계좌가 팀 예산 지급 원천입니다. 예산 수락 시 여기서 팀 계좌로 실제 자금이 이동합니다.</div></div></div>
+ <section class="section"><div class="notice"><b>자동 반영 원칙</b><br>입금완료 매출은 해당 계좌에 더하고, 지출은 해당 계좌에서 뺍니다. 실제 통장과 차이가 있을 때만 ‘잔액 맞추기’를 사용합니다.</div>
+ <table><thead><tr><th>계좌</th><th>현재 잔액</th><th>관리</th></tr></thead><tbody>${["강신나","허슬","엘리븐","로아미"].map(t=>`<tr><td><b style="color:${TEAM_META[t].color}">${t}</b></td><td>${won(state.accounts[t])}</td><td><button class="soft-btn" onclick="openBalance('${t}')">잔액 맞추기</button></td></tr>`).join("")}<tr><td><b>통합 보유현금</b></td><td><b>${won(totalCash())}</b></td><td>-</td></tr></tbody></table></section>
+ <section class="section"><div class="section-title"><h2>내부 자금이동</h2><div class="hint">매출·지출로 잡히지 않습니다.</div></div><div class="form-grid">
+ <div class="field"><label>보내는 계좌</label><select id="trFrom">${["강신나","허슬","엘리븐","로아미"].map(t=>`<option>${t}</option>`).join("")}</select></div>
+ <div class="field"><label>받는 계좌</label><select id="trTo">${["허슬","강신나","엘리븐","로아미"].map(t=>`<option>${t}</option>`).join("")}</select></div>
+ <div class="field"><label>금액</label><input id="trAmount" inputmode="numeric" placeholder="0원"></div><div class="field"><label>메모</label><input id="trMemo" placeholder="예: 허슬 주간예산 지급"></div></div>
+ <div class="form-actions"><button class="primary" onclick="transferMoney()">자금 이동</button></div></section>`;
+}
+window.transferMoney=function(){const f=document.getElementById("trFrom").value,t=document.getElementById("trTo").value,a=parseMoney(document.getElementById("trAmount").value),m=document.getElementById("trMemo").value||"내부 자금이동";if(f===t)return alert("서로 다른 계좌를 선택하세요.");if(!a)return alert("금액을 입력하세요.");if(state.accounts[f]<a&&!confirm("보내는 계좌 잔액보다 큰 금액입니다. 계속할까요?"))return;state.accounts[f]-=a;state.accounts[t]+=a;state.transfers=state.transfers||[];state.transfers.push({id:Date.now(),date:todayISO(),from:f,to:t,amount:a,memo:m,type:"내부이동"});notify(f,"자금 출금",`${t}로 ${won(a)} 이동 · ${m}`);notify(t,"자금 입금",`${f}에서 ${won(a)} 입금 · ${m}`);notify("강신나","내부 자금이동",`${f} → ${t} ${won(a)} · ${m}`);saveState();showToast("자금 이동이 반영되었습니다.",`${f} → ${t} · ${won(a)}`);renderApp()}
+function fixedPage(){
+ const recurring=(state.recurringExpenses||[]).filter(r=>r.active!==false);
+ const central=state.fixedCosts||[];
+ return `<div class="page-head"><div><h1>고정비</h1><div class="sub">강신나 중앙 고정비와 각 팀의 월 반복지출을 관리합니다.</div></div></div>
+ <section class="section">
+   <div class="section-title"><h2>강신나 고정비</h2><button class="soft-btn" onclick="openFixedCostAdd()">+ 고정비 추가</button></div>
+   ${central.length?`<table><thead><tr><th>항목</th><th>금액</th><th>지급일</th><th>주간 반영</th><th>월간 반영</th><th>관리</th></tr></thead><tbody>
+   ${central.map(f=>`<tr>
+     <td>${f.name}</td><td>${won(f.amount)}</td><td>매월 ${f.day}일</td>
+     <td>${f.weekly?`<span class="pill ok">포함</span>`:`<span class="pill">제외</span>`}</td>
+     <td>${f.monthly?`<span class="pill ok">포함</span>`:`<span class="pill">제외</span>`}</td>
+     <td><div style="display:flex;gap:6px"><button class="soft-btn" onclick="editFixedCost(${f.id})">수정</button><button class="soft-btn" onclick="deleteFixedCost(${f.id})">삭제</button></div></td>
+   </tr>`).join("")}
+   </tbody></table>`:`<div class="empty">등록된 강신나 고정비가 없습니다.</div>`}
+ </section>
+ <section class="section">
+   <div class="section-title"><h2>팀별 자동 고정지출</h2><div class="hint">각 팀의 미리 신고에서 ‘매달 같은 날’로 등록된 항목</div></div>
+   ${recurring.length?`<table><thead><tr><th>팀</th><th>항목</th><th>금액</th><th>자동 등록일</th><th>상태</th><th>관리</th></tr></thead><tbody>
+   ${recurring.map(r=>`<tr>
+     <td><b style="color:${TEAM_META[r.team].color}">${r.team}</b></td><td>${r.name}</td>
+     <td class="money-expense">${won(r.amount)}</td><td>매월 ${r.day}일</td><td><span class="pill ok">자동등록</span></td>
+     <td><div style="display:flex;gap:6px"><button class="soft-btn" onclick="editRecurring(${r.id})">수정</button><button class="soft-btn" onclick="deleteRecurring(${r.id})">삭제</button></div></td>
+   </tr>`).join("")}
+   </tbody></table>`:`<div class="empty">팀별 자동 고정지출이 없습니다.</div>`}
+ </section>`;
+}
+
+
+window.openFixedCostAdd=function(){
+ document.getElementById("modalRoot").innerHTML=`<div class="modal-back"><div class="modal">
+   <h3>강신나 고정비 추가</h3>
+   <p>매달 반복되는 중앙 고정비를 등록합니다.</p>
+   <div class="form-grid">
+     <div class="field"><label>항목명</label><input id="fName" placeholder="예: 사무실 임대료"></div>
+     <div class="field"><label>금액</label><input id="fAmount" inputmode="numeric" placeholder="0원"></div>
+     <div class="field"><label>매월 지급일</label><input id="fDay" type="number" min="1" max="31" value="1"></div>
+     <div class="field"><label>예산 반영</label><select id="fBudget"><option value="both">주간·월간</option><option value="month">월간만</option><option value="none">반영 안 함</option></select></div>
+   </div>
+   <div class="form-actions"><button class="ghost" onclick="closeModal()">취소</button><button class="primary" onclick="saveFixedCost()">저장</button></div>
+ </div></div>`;
+}
+window.saveFixedCost=function(){
+ const name=document.getElementById("fName").value.trim();
+ const amount=parseMoney(document.getElementById("fAmount").value);
+ const day=Math.max(1,Math.min(31,Number(document.getElementById("fDay").value)||1));
+ const b=document.getElementById("fBudget").value;
+ if(!name||!amount)return alert("항목명과 금액을 입력하세요.");
+ state.fixedCosts.push({id:Date.now(),name,amount,day,weekly:b==="both",monthly:b!=="none"});
+ notify("강신나","고정비 등록",`${name} ${won(amount)} · 매월 ${day}일`);
+ saveState();closeModal();showToast("고정비가 등록되었습니다.",`${name} · ${won(amount)}`);renderApp();
+}
+window.editFixedCost=function(id){
+ const f=state.fixedCosts.find(x=>x.id===id);if(!f)return;
+ const mode=f.weekly&&f.monthly?"both":(f.monthly?"month":"none");
+ document.getElementById("modalRoot").innerHTML=`<div class="modal-back"><div class="modal">
+   <h3>강신나 고정비 수정</h3>
+   <div class="form-grid">
+     <div class="field"><label>항목명</label><input id="efName" value="${f.name}"></div>
+     <div class="field"><label>금액</label><input id="efAmount" inputmode="numeric" value="${f.amount}"></div>
+     <div class="field"><label>매월 지급일</label><input id="efDay" type="number" min="1" max="31" value="${f.day}"></div>
+     <div class="field"><label>예산 반영</label><select id="efBudget"><option value="both" ${mode==="both"?"selected":""}>주간·월간</option><option value="month" ${mode==="month"?"selected":""}>월간만</option><option value="none" ${mode==="none"?"selected":""}>반영 안 함</option></select></div>
+   </div>
+   <div class="form-actions"><button class="ghost" onclick="closeModal()">취소</button><button class="primary" onclick="saveFixedCostEdit(${id})">수정 저장</button></div>
+ </div></div>`;
+}
+window.saveFixedCostEdit=function(id){
+ const f=state.fixedCosts.find(x=>x.id===id);if(!f)return;
+ const name=document.getElementById("efName").value.trim();
+ const amount=parseMoney(document.getElementById("efAmount").value);
+ const day=Math.max(1,Math.min(31,Number(document.getElementById("efDay").value)||1));
+ const b=document.getElementById("efBudget").value;
+ if(!name||!amount)return alert("항목명과 금액을 입력하세요.");
+ Object.assign(f,{name,amount,day,weekly:b==="both",monthly:b!=="none"});
+ notify("강신나","고정비 수정",`${name} ${won(amount)} · 매월 ${day}일`);
+ saveState();closeModal();showToast("고정비가 수정되었습니다.",`${name} · ${won(amount)}`);renderApp();
+}
+window.deleteFixedCost=function(id){
+ const f=state.fixedCosts.find(x=>x.id===id);if(!f)return;
+ openConfirm("고정비 삭제",`${f.name} · ${won(f.amount)} 고정비를 삭제할까요?`,()=>{
+   state.fixedCosts=state.fixedCosts.filter(x=>x.id!==id);
+   notify("강신나","고정비 삭제",`${f.name} ${won(f.amount)} 고정비가 삭제되었습니다.`);
+   saveState();showToast("고정비가 삭제되었습니다.",`${f.name} · ${won(f.amount)}`);renderApp();
+ });
+}
+window.deleteRecurring=function(id){
+ const r=state.recurringExpenses.find(x=>x.id===id);if(!r)return;
+ openConfirm("팀 고정지출 삭제",`${r.team} · ${r.name} · ${won(r.amount)} 고정지출을 삭제할까요? 오늘 이후 자동 생성된 미처리 예정내역도 함께 제거됩니다.`,()=>{
+   state.recurringExpenses=state.recurringExpenses.filter(x=>x.id!==id);
+   state.plans=state.plans.filter(p=>!(p.recurringId===id&&p.status==="planned"&&p.date>=todayISO()));
+   notify(r.team,"고정지출 삭제",`${r.name} 자동 고정지출이 삭제되었습니다.`);
+   notify("강신나",`${r.team} 고정지출 삭제`,`${r.name} 자동 고정지출 삭제`);
+   saveState();showToast("팀 고정지출이 삭제되었습니다.",`${r.team} · ${r.name}`);renderApp();
+ });
+}
+function settingsPage(){
+ const today=todayISO(),monthStart=today.slice(0,8)+"01";return `<div class="page-head"><div><h1>설정</h1><div class="sub">이용 내역 엑셀 다운로드와 운영 데이터 관리를 합니다.</div></div></div><section class="section"><div class="section-title"><h2>이용 내역 엑셀 다운로드</h2><div class="hint">기간과 팀·항목 범위를 골라 저장</div></div><div class="form-grid"><div class="field"><label>시작일</label><input id="exportStart" type="date" value="${monthStart}"></div><div class="field"><label>종료일</label><input id="exportEnd" type="date" value="${today}"></div><div class="field"><label>팀 범위</label><select id="exportTeam"><option value="전체">전체 팀</option><option>허슬</option><option>엘리븐</option><option>로아미</option><option>강신나</option></select></div><div class="field"><label>파일 형식</label><input value="엑셀 파일 (.xls)" disabled></div></div><div style="margin-top:12px"><div class="hint" style="margin-bottom:6px">포함할 내역</div><div class="export-checks"><label><input type="checkbox" id="exSales" checked> 매출</label><label><input type="checkbox" id="exExpenses" checked> 지출</label><label><input type="checkbox" id="exBudgets" checked> 예산요청</label><label><input type="checkbox" id="exTransfers" checked> 자금이동</label><label><input type="checkbox" id="exPlans" checked> 미리 신고</label></div></div><div class="form-actions"><button class="primary" onclick="exportUsageExcel()">엑셀 다운로드</button></div></section><section class="section"><div class="notice"><b>주의</b><br>전체 데이터 초기화는 계좌·매출·지출·예정내역·고정비·부채·주간예산을 모두 지웁니다.</div><button class="ghost" onclick="resetAllData()">전체 데이터 초기화</button></section>`;
+}
+function xmlEscape(v){return String(v??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
+window.exportUsageExcel=function(){const start=document.getElementById("exportStart").value,end=document.getElementById("exportEnd").value,team=document.getElementById("exportTeam").value;if(!start||!end||start>end)return alert("시작일과 종료일을 확인하세요.");const teamOk=t=>team==="전체"||t===team,rows=[];if(document.getElementById("exSales").checked)state.sales.forEach(x=>{const d=x.receivedAt||x.date;if(d>=start&&d<=end&&teamOk(x.team))rows.push([d,x.team,"매출",x.name,x.status,Number(x.amount)||0,"-",x.account||"",""])});if(document.getElementById("exExpenses").checked)state.expenses.forEach(x=>{if(x.date>=start&&x.date<=end&&teamOk(x.team))rows.push([x.date,x.team,"지출",x.name,"완료",-(Number(x.amount)||0),x.expenseFor||x.team,x.account||"",`부가세 ${Number(x.vat)||0}${x.memo?` · ${x.memo}`:""}`])});if(document.getElementById("exBudgets").checked)state.budgetRequests.forEach(x=>{if(x.weekStart>=start&&x.weekStart<=end&&teamOk(x.team))rows.push([x.weekStart,x.team,x.requestType==="추가"?"추가예산요청":"주간예산요청",weekLabelInfo(x.weekStart).label,x.status,Number(x.status==="승인"?(x.approvedAmount||x.requestedAmount):x.requestedAmount)||0,"-","팀 예산",x.memo||""])});if(document.getElementById("exTransfers")?.checked)(state.transfers||[]).forEach(x=>{if(x.date>=start&&x.date<=end&&(team==="전체"||x.from===team||x.to===team))rows.push([x.date,`${x.from}→${x.to}`,x.type==="예산지급"?"예산지급":"자금이동",x.memo||"", "완료",Number(x.amount)||0,"-",`${x.from} → ${x.to}`,x.budgetRequestId?`예산요청 #${x.budgetRequestId}`:""])});if(document.getElementById("exPlans").checked)state.plans.filter(x=>x.status==="planned").forEach(x=>{if(x.date>=start&&x.date<=end&&teamOk(x.team))rows.push([x.date,x.team,x.type==="expense"?"예정지출":"예정매출",x.name,"예정",x.type==="expense"?-(Number(x.amount)||0):(Number(x.amount)||0),x.type==="expense"?(x.expenseFor||x.team):"-","",x.isRecurring?"고정 자동등록":"미리 신고"])});rows.sort((a,b)=>String(a[0]).localeCompare(String(b[0]))||String(a[1]).localeCompare(String(b[1])));if(!rows.length)return alert("선택한 조건에 해당하는 내역이 없습니다.");const headers=["날짜","결제/등록팀","구분","내용","상태","금액","사용 대상","계좌/반영","메모"],makeCell=(v,isNum=false)=>`<Cell><Data ss:Type="${isNum?"Number":"String"}">${xmlEscape(v)}</Data></Cell>`,xml=`<?xml version="1.0" encoding="UTF-8"?><?mso-application progid="Excel.Sheet"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"><Worksheet ss:Name="이용내역"><Table><Row>${headers.map(h=>makeCell(h)).join("")}</Row>${rows.map(r=>`<Row>${r.map((v,i)=>makeCell(v,i===5)).join("")}</Row>`).join("")}</Table></Worksheet></Workbook>`,blob=new Blob(["\ufeff",xml],{type:"application/vnd.ms-excel;charset=utf-8"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=`강신나_이용내역_${start}_${end}.xls`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);showToast("엑셀 파일을 다운로드했습니다.",`${start} ~ ${end}`)}
+window.resetAllData=function(){
+ openConfirm("전체 데이터 초기화","정말 모든 실사용 데이터를 초기화할까요? 이 작업은 되돌릴 수 없습니다.",()=>{
+   state=seedState();saveState();renderApp();
+ });
+}
+
+function debtPage(){
+ const monthlyPayment=state.debts.reduce((a,b)=>a+(Number(b.monthlyPayment)||0),0);
+ const monthlyInterest=state.debts.reduce((a,d)=>a+(Number(d.principal)||0)*(Number(d.rate)||0)/100/12,0);
+ return `<div class="page-head">
+   <div><h1>부채·상환계획</h1><div class="sub">현재 대출잔액과 월 상환액을 관리하고, 추가 상환 시나리오를 계산합니다.</div></div>
+ </div>
+ <div class="cards">
+   ${stat("총 대출잔액",won(totalDebt()),"등록된 현재 원금 합계")}
+   ${stat("월 정기상환",won(monthlyPayment),"등록된 월 납입액 합계")}
+   ${stat("이번 달 예상 이자",won(monthlyInterest),"현재 원금 기준 단순 추정")}
+ </div>
+
+ <section class="section">
+   <div class="section-title">
+     <h2>현재 부채</h2>
+     <button class="soft-btn" onclick="openDebtAdd()">+ 부채 추가</button>
+   </div>
+   ${state.debts.length ? `
+     <div class="debt-grid">
+       ${state.debts.map(d=>`
+         <div class="debt-card">
+           <div class="section-title" style="margin-bottom:8px">
+             <h3 style="margin:0">${d.name}</h3>
+             <div style="display:flex;gap:6px">
+               <button class="soft-btn" onclick="editDebt(${d.id})">수정</button>
+               <button class="soft-btn" onclick="deleteDebt(${d.id})">삭제</button>
+             </div>
+           </div>
+           <div class="row"><span>원금 잔액</span><strong>${won(d.principal)}</strong></div>
+           <div class="row"><span>금리</span><strong>${Number(d.rate||0).toFixed(2).replace(/\.00$/,"")}%</strong></div>
+           <div class="row"><span>월 납입액</span><strong>${won(d.monthlyPayment)}</strong></div>
+           <div class="row"><span>납입일</span><strong>매월 ${d.paymentDay}일</strong></div>
+           <div class="row"><span>월 예상 이자</span><strong>${won((d.principal||0)*(d.rate||0)/100/12)}</strong></div>
+           <div class="row"><span>예산 반영</span><strong>${d.weekly?"주간":""}${d.weekly&&d.monthly?" · ":""}${d.monthly?"월간":(!d.weekly?"반영 안 함":"")}</strong></div>
+         </div>`).join("")}
+     </div>` : `<div class="empty">등록된 부채가 없습니다. ‘부채 추가’로 현재 대출부터 등록하세요.</div>`}
+ </section>
+
+ <section class="section">
+   <div class="section-title"><h2>12개월 상환 시뮬레이션</h2><div class="hint">추가 월상환액을 넣어 비교</div></div>
+   ${state.debts.length ? `
+     <div class="form-grid">
+       <div class="field"><label>대출 선택</label>
+         <select id="simDebt">${state.debts.map(d=>`<option value="${d.id}">${d.name}</option>`).join("")}</select>
+       </div>
+       <div class="field"><label>매월 추가 상환액</label><input id="simExtra" inputmode="numeric" value="0"></div>
+     </div>
+     <div class="form-actions"><button class="primary" onclick="runDebtSim()">계획 계산</button></div>
+     <div id="simResult" class="calc-result"><div class="row"><span>예상 결과</span><strong>추가 상환액을 입력해 계산하세요.</strong></div></div>
+   ` : `<div class="empty">부채를 먼저 등록하면 상환 계획을 계산할 수 있습니다.</div>`}
+ </section>`;
+}
+
+window.editDebt=function(id){
+ const d=state.debts.find(x=>x.id===id); if(!d)return;
+ const mode=d.weekly&&d.monthly?"both":(d.monthly?"month":"none");
+ document.getElementById("modalRoot").innerHTML=`<div class="modal-back"><div class="modal">
+   <h3>부채 수정</h3>
+   <p>현재 원금, 금리, 월 납입액과 예산 반영 여부를 수정합니다.</p>
+   <div class="form-grid">
+     <div class="field"><label>대출명</label><input id="edName" value="${d.name}"></div>
+     <div class="field"><label>현재 원금</label><input id="edPrincipal" inputmode="numeric" value="${d.principal}"></div>
+     <div class="field"><label>금리(%)</label><input id="edRate" type="number" step="0.01" value="${d.rate}"></div>
+     <div class="field"><label>월 납입액</label><input id="edPay" inputmode="numeric" value="${d.monthlyPayment}"></div>
+     <div class="field"><label>납입일</label><input id="edDay" type="number" min="1" max="31" value="${d.paymentDay}"></div>
+     <div class="field"><label>예산 반영</label>
+       <select id="edBudget">
+         <option value="both" ${mode==="both"?"selected":""}>주간·월간</option>
+         <option value="month" ${mode==="month"?"selected":""}>월간만</option>
+         <option value="none" ${mode==="none"?"selected":""}>반영 안 함</option>
+       </select>
+     </div>
+   </div>
+   <div class="form-actions"><button class="ghost" onclick="closeModal()">취소</button><button class="primary" onclick="saveDebtEdit(${id})">수정 저장</button></div>
+ </div></div>`;
+}
+
+window.saveDebtEdit=function(id){
+ const d=state.debts.find(x=>x.id===id); if(!d)return;
+ const name=document.getElementById("edName").value.trim();
+ const principal=parseMoney(document.getElementById("edPrincipal").value);
+ const rate=Number(document.getElementById("edRate").value)||0;
+ const pay=parseMoney(document.getElementById("edPay").value);
+ const day=Math.max(1,Math.min(31,Number(document.getElementById("edDay").value)||1));
+ const b=document.getElementById("edBudget").value;
+ if(!name||!principal||!pay)return alert("대출명, 현재 원금, 월 납입액을 입력하세요.");
+ Object.assign(d,{name,principal,rate,monthlyPayment:pay,paymentDay:day,weekly:b==="both",monthly:b!=="none"});
+ notify("강신나","부채 수정",`${name} · 현재 원금 ${won(principal)} · 월 납입 ${won(pay)}`);
+ saveState(); closeModal(); showToast("부채 정보가 수정되었습니다.",`${name} · ${won(principal)}`);renderApp();
+}
+
+window.deleteDebt=function(id){
+ const d=state.debts.find(x=>x.id===id); if(!d)return;
+ openConfirm("부채 삭제",`${d.name} · ${won(d.principal)} 부채 정보를 삭제할까요?`,()=>{
+   state.debts=state.debts.filter(x=>x.id!==id);
+   notify("강신나","부채 삭제",`${d.name} 부채 정보가 삭제되었습니다.`);
+   saveState();showToast("부채 정보가 삭제되었습니다.",d.name);renderApp();
+ });
+}
+
+window.runDebtSim=function(){
+ const debtSelect=document.getElementById("simDebt");
+ const extraInput=document.getElementById("simExtra");
+ const result=document.getElementById("simResult");
+ if(!debtSelect||!extraInput||!result)return;
+ const id=Number(debtSelect.value);
+ const extra=Math.max(0,parseMoney(extraInput.value));
+ const d=state.debts.find(x=>x.id===id);
+ if(!d)return;
+ let p=Number(d.principal)||0,interest=0,totalPaid=0;
+ const rows=[];
+ for(let i=1;i<=12;i++){
+   if(p<=0){rows.push({month:i,interest:0,principal:0,balance:0});continue}
+   const im=p*(Number(d.rate)||0)/100/12;
+   const payment=Math.min(p+im,(Number(d.monthlyPayment)||0)+extra);
+   const principalPay=Math.max(0,Math.min(p,payment-im));
+   interest+=im; totalPaid+=payment; p=Math.max(0,p-principalPay);
+   rows.push({month:i,interest:im,principal:principalPay,balance:p});
+ }
+ result.innerHTML=`
+   <div class="row"><span>12개월 후 예상 원금</span><strong>${won(p)}</strong></div>
+   <div class="row"><span>12개월 예상 이자 합계</span><strong>${won(interest)}</strong></div>
+   <div class="row"><span>12개월 예상 총 납입액</span><strong>${won(totalPaid)}</strong></div>
+   <div class="row"><span>매월 계획 납입액</span><strong>${won((Number(d.monthlyPayment)||0)+extra)}</strong></div>`;
+}
+window.openDebtAdd=function(){document.getElementById("modalRoot").innerHTML=`<div class="modal-back"><div class="modal"><h3>부채 추가</h3><p>현재 원금과 월 납입조건을 등록합니다.</p><div class="form-grid"><div class="field"><label>대출명</label><input id="dName"></div><div class="field"><label>현재 원금</label><input id="dPrincipal" inputmode="numeric"></div><div class="field"><label>금리(%)</label><input id="dRate" type="number" step="0.1"></div><div class="field"><label>월 납입액</label><input id="dPay" inputmode="numeric"></div><div class="field"><label>납입일</label><input id="dDay" type="number" min="1" max="31" value="15"></div><div class="field"><label>예산 반영</label><select id="dBudget"><option value="both">주간·월간</option><option value="month">월간만</option><option value="none">반영 안 함</option></select></div></div><div class="form-actions"><button class="ghost" onclick="closeModal()">취소</button><button class="primary" onclick="saveDebt()">저장</button></div></div></div>`}
+window.saveDebt=function(){
+ const name=document.getElementById("dName").value.trim();
+ const principal=parseMoney(document.getElementById("dPrincipal").value);
+ const rate=Number(document.getElementById("dRate").value)||0;
+ const pay=parseMoney(document.getElementById("dPay").value);
+ const day=Math.max(1,Math.min(31,Number(document.getElementById("dDay").value)||1));
+ const b=document.getElementById("dBudget").value;
+ if(!name||!principal||!pay)return alert("대출명, 현재 원금, 월 납입액을 입력하세요.");
+ state.debts.push({id:Date.now(),name,principal,rate,paymentDay:day,monthlyPayment:pay,weekly:b==="both",monthly:b!=="none"});
+ notify("강신나","부채 등록",`${name} · 현재 원금 ${won(principal)} · 월 납입 ${won(pay)}`);
+ saveState(); closeModal(); showToast("부채가 등록되었습니다.",`${name} · ${won(principal)}`);renderApp();
+}
+window.closeModal=function(){document.getElementById("modalRoot").innerHTML=""}
+window.openBalance=function(team){document.getElementById("modalRoot").innerHTML=`<div class="modal-back"><div class="modal"><h3>${team} 계좌 잔액 맞추기</h3><p>실제 통장과 시스템 숫자가 다를 때만 사용합니다. 매출·지출·자금이동은 평소 자동 반영됩니다.</p><div class="field"><label>실제 현재 잔액</label><input id="balVal" inputmode="numeric" value="${state.accounts[team]}"></div><div class="field" style="margin-top:10px"><label>조정 사유</label><input id="balMemo" placeholder="예: 누락 거래 반영"></div><div class="form-actions"><button class="ghost" onclick="closeModal()">취소</button><button class="primary" onclick="saveBalance('${team}')">저장</button></div></div></div>`}
+window.saveBalance=function(team){const before=state.accounts[team],v=parseMoney(document.getElementById("balVal").value),memo=document.getElementById("balMemo").value||"잔액 조정";state.accounts[team]=v;notify("강신나",`${team} 잔액 조정`,`${won(before)} → ${won(v)} · ${memo}`);if(team!=="강신나")notify(team,"계좌잔액 조정",`현재 계좌잔액이 ${won(v)}으로 수정되었습니다.`);saveState();closeModal();const gap=team==="강신나"?0:budgetCashGap(team);showToast("계좌잔액이 수정되었습니다.",gap>0?`${team} · ${won(v)} · 미사용예산과 ${won(gap)} 차이 발생`:`${team} · ${won(v)}`,gap>0?"error":undefined);renderApp()}
+
+window.go=function(p){currentPage=p;selectedPlanId=null;renderApp()}
+
+function renderApp(){
+ materializeRecurringExpenses();syncBudgetMirror();updateWeekSwitcher();
+ teamStyle(currentTeam);document.getElementById("brandTitle").textContent=currentTeam==="강신나"?"강신나 자금관리":`${currentTeam} 관리`;renderNav();renderNotifications();
+ let html="";
+ if(currentTeam==="강신나"){
+  if(currentPage==="홈")html=centralHome();
+  else if(currentPage==="지출 등록")html=expensePage("강신나");
+  else if(currentPage==="통합 캘린더")html=calendarPage();
+  else if(currentPage==="주간예산")html=weeklyCentral();
+  else if(currentPage==="월간예산")html=monthlyCentral();
+  else if(currentPage==="매출·지출")html=centralLedger();
+  else if(currentPage==="자금·계좌")html=accountsPage();
+  else if(currentPage==="고정비")html=fixedPage();
+  else if(currentPage==="부채·상환계획")html=debtPage();
+  else html=settingsPage();
+ }else{
+  if(currentPage==="홈")html=teamHome(currentTeam);
+  else if(currentPage==="예산 요청")html=budgetPage(currentTeam);
+  else if(currentPage==="매출 등록")html=salesPage(currentTeam);
+  else if(currentPage==="지출 등록")html=expensePage(currentTeam);
+  else if(currentPage==="미리 신고")html=planPage(currentTeam);
+  else if(currentPage==="잔액 입력")html=balancePage(currentTeam);
+  else html=historyPage(currentTeam);
+ }
+ document.getElementById("content").innerHTML=html;
+ const bt=document.getElementById("budgetTarget");if(bt)bt.oninput=()=>{const v=parseMoney(bt.value),carry=weekCarryover(currentTeam),approved=getWeekBudget(currentTeam).approved,need=Math.max(0,v-carry-approved);document.getElementById("budgetCalc").innerHTML=`<div class="row"><span>전주 이월</span><strong>-${won(carry)}</strong></div><div class="row"><span>이미 승인된 예산</span><strong>-${won(approved)}</strong></div><div class="row"><span>강신나 추가 승인 요청액</span><strong>${won(need)}</strong></div>`};
+ const ea=document.getElementById("expAmount");if(ea){const update=()=>{const v=parseMoney(ea.value),vat=Math.round(v/11),supply=v-vat;document.getElementById("vatPreview").innerHTML=`<div class="row"><span>공급가액</span><strong>${won(supply)}</strong></div><div class="row"><span>부가세</span><strong>${won(vat)}</strong></div><div class="row"><span>총 출금</span><strong class="money-expense">-${won(v)}</strong></div>`};ea.oninput=update;update()}
+ if(document.getElementById("planType")) toggleRecurringOption();
+ bindCalendarLongPress();
+}
+
+(async function init(){
+ try{await ensureServiceWorker().catch(()=>null);
+ 
+   const session=await fetch('/api/session',{cache:'no-store'});
+   const info=await session.json();
+   if(info.authenticated){
+     await loadRemoteState();
+     {const savedWeek=sessionStorage.getItem("selectedWeekStart");if(savedWeek){const sd=new Date(savedWeek+"T00:00:00");selectedWeekStart=sd.getDay()===6?addDaysISO(savedWeek,1):weekStartISO(savedWeek)}else selectedWeekStart=weekStartISO(todayISO());sessionStorage.setItem("selectedWeekStart",selectedWeekStart);syncBudgetMirror();}
+     const saved=sessionStorage.getItem("currentTeam");
+     if(saved){currentTeam=saved;teamStyle(currentTeam);showOnly("mainScreen");renderApp();syncExistingPushTeam()}else showOnly("teamScreen");
+   }else showOnly("passwordScreen");
+ }catch(e){showOnly("passwordScreen");document.getElementById("pwErr").textContent="서버 연결을 확인하세요.";}
+ setInterval(syncRemoteState,5000);
+})();
+</script>
+</body>
+</html>
